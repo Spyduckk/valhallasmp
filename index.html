@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ValhallaSMP 26.2</title>
+    <style>
+        body {
+            background-color: #0b0f19;
+            color: #e2e8f0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            max-width: 700px;
+            width: 100%;
+            background: #111827;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            border: 1px solid #1f2937;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        h1 {
+            color: #60a5fa;
+            margin: 0 0 5px 0;
+            font-size: 32px;
+        }
+        .subtitle {
+            color: #9ca3af;
+            font-size: 16px;
+            margin: 0;
+        }
+        .ip-card {
+            background: linear-gradient(135deg, #1e3a8a, #1e40af);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.2s;
+            border: 1px solid #3b82f6;
+            margin-bottom: 25px;
+        }
+        .ip-card:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
+        }
+        .ip-title {
+            font-size: 13px;
+            color: #93c5fd;
+            display: block;
+            margin-bottom: 5px;
+        }
+        .ip-address {
+            font-size: 20px;
+            font-weight: bold;
+            font-family: monospace;
+            color: #ffffff;
+        }
+        .info-grid {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        .info-box {
+            flex: 1;
+            background: #1f2937;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .info-box h3 {
+            margin: 0 0 8px 0;
+            color: #f43f5e;
+            font-size: 16px;
+        }
+        .info-box p {
+            margin: 0;
+            font-size: 14px;
+            color: #d1d5db;
+        }
+        .rules {
+            background: #1f2937;
+            padding: 20px;
+            border-radius: 10px;
+        }
+        .rules h2 {
+            margin-top: 0;
+            color: #34d399;
+            font-size: 20px;
+            text-align: center;
+        }
+        .rules ul {
+            padding-left: 20px;
+            margin: 0;
+        }
+        .rules li {
+            font-size: 14px;
+            color: #d1d5db;
+            margin-bottom: 10px;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>ValhallaSMP 26.2</h1>
+            <p class="subtitle">Ванильный сервер Minecraft</p>
+        </header>
+
+        <div class="ip-card" onclick="navigator.clipboard.writeText('mc.valhallasmp.online:32998'); alert('IP скопирован в буфер обмена!');">
+            <span class="ip-title">IP-адрес сервера (нажми, чтобы скопировать):</span>
+            <div class="ip-address">mc.valhallasmp.online:32998</div>
+        </div>
+
+        <div class="info-grid">
+            <div class="info-box">
+                <h3>🌍 Мир</h3>
+                <p>Границы мира: 10к на 10к блоков</p>
+            </div>
+            <div class="info-box">
+                <h3>🔒 Вайтлист</h3>
+                <p>Пока без вайтлиста, заходи и играй!</p>
+            </div>
+        </div>
+
+        <section class="rules">
+            <h2>📜 Основные правила сервера</h2>
+            <ul>
+                <li><b>1. Общие положения:</b> Администрация действует на своё усмотрение. Незнание правил не освобождает от ответственности. Соблюдайте приличия.</li>
+                <li><b>2. Общение:</b> Запрещен спам, флуд, реклама без ведома админов и оскорбления.</li>
+                <li><b>3. Игровой процесс:</b> Гриферство строго запрещено. Строительство лаг-машин, ломающих сервер, карается баном.</li>
+            </ul>
+        </section>
+    </div>
+</body>
+</html>
