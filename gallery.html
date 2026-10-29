@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ValhallaSMP 26.2 - Галерея</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="container">
+    <div class="nav">
+        <div class="nav-tabs">
+            <a href="index.html" class="tab-btn">Главная</a>
+            <a href="gallery.html" class="tab-btn active">Галерея</a>
+        </div>
+        <div class="auth-panel" id="authPanel"></div>
+    </div>
+
+    <h2>📸 Галерея сервера</h2>
+    
+    <div id="uploadSection" style="display:none;" class="form-group">
+        <h3>Загрузить скриншот</h3>
+        <input type="file" id="imageFile" accept="image/*">
+        <textarea id="imageCaption" placeholder="Подпись к фото..." rows="2"></textarea>
+        <button class="btn" onclick="uploadPost()">Опубликовать</button>
+    </div>
+    <p id="loginPrompt" style="color: #9ca3af;">Войдите в аккаунт, чтобы загружать скриншоты.</p>
+
+    <!-- Формы логина/регистрации (появляются если не вошел) -->
+    <div id="authForms" class="form-group">
+        <h3>Авторизация / Регистрация</h3>
+        <input type="email" id="authEmail" placeholder="Email">
+        <input type="password" id="authPassword" placeholder="Пароль">
+        <div style="display: flex; gap: 10px;">
+            <button class="btn" onclick="login()">Войти</button>
+            <button class="btn" style="background:#60a5fa;" onclick="register()">Регистрация</button>
+        </div>
+    </div>
+
+    <div id="postsFeed" style="margin-top: 20px;">
+        <!-- Сюда подгружаются посты из базы -->
+    </div>
+</div>
+
+<script type="module">
+    import { auth } from './auth.js';
+    import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
+
+    const db = getFirestore();
+    const storage = getStorage();
+
+    window.uploadPost = async function() {
+        const fileInput = document.getElementById('imageFile');
+        const caption = document.getElementById('imageCaption').value;
+        if (!fileInput.files[0]) return alert("Выбери картинку!");
+
+        const file = fileInput.files[0];
+        const storageRef = ref(storage, 'posts/' + Date.now() + '_' + file.name);
+        
+        alert("Загрузка картинки...");
+        await uploadBytes(storageRef, file);
+        const url = await getDownloadURL(storageRef);
+
+        await addDoc(collection(db, "posts"), {
+            imageUrl: url,
+            caption: caption,
+            author: auth.currentUser.email,
+            createdAt: Date.now()
+        });
+
+        fileInput.value = '';
+        document.getElementById('imageCaption').value = '';
+        alert("Пост опубликован!");
+        loadPosts();
+    }
+
+    async function loadPosts() {
+        const feed = document.getElementById('postsFeed');
+        feed.innerHTML = "Загрузка постов...";
+        const querySnapshot = await getDocs(collection(db, "posts"));
+        feed.innerHTML = "";
+        querySnapshot.forEach((docSnap) => {
+            const post = docSnap.data();
+            feed.innerHTML += `
+                <div style="background:var(--box-bg); border-radius:12px; padding:15px; margin-bottom:15px; border:1px solid #374151;">
+                    <p style="margin:0 0 5px 0; color:var(--accent); font-size:13px;"><b>${post.author}</b></p>
+                    <p style="margin:0 0 10px 0;">${post.caption || ''}</p>
+                    <img src="${post.imageUrl}" style="width:100%; border-radius:8px; max-height:400px; object-fit:cover;">
+                </div>
+            `;
+        });
+    }
+
+    loadPosts();
+</script>
+</body>
+</html>
