@@ -8,8 +8,6 @@ const fs = require('fs');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
-app.express = express.json();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
@@ -22,14 +20,13 @@ if (!fs.existsSync(uploadDir)) {
 
 const upload = multer({ dest: uploadDir });
 
-// Инициализация базы данных SQLite
+// База данных SQLite
 const dbFile = path.join(__dirname, 'database.sqlite');
 const db = new sqlite3.Database(dbFile, (err) => {
-    if (err) console.error('Ошибка подключения к БД', err.message);
-    else console.log('Подключено к базе данных SQLite.');
+    if (err) console.error('Ошибка БД', err.message);
+    else console.log('База данных подключена.');
 });
 
-// Создание таблиц
 db.serialize(() => {
     db.run(`CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -46,8 +43,6 @@ db.serialize(() => {
         createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
 });
-
-// --- API РОУТЫ ---
 
 // Регистрация
 app.post('/api/register', async (req, res) => {
@@ -68,11 +63,11 @@ app.post('/api/register', async (req, res) => {
                 if (err) {
                     return res.status(400).json({ error: 'Пользователь с таким email или юзернеймом уже существует.' });
                 }
-                res.json({ success: true, userId: this.lastID, username });
+                res.json({ success: true, username });
             }
         );
     } catch (e) {
-        res.status(500.0).json({ error: 'Ошибка сервера' });
+        res.status(500).json({ error: 'Ошибка сервера' });
     }
 });
 
@@ -94,7 +89,7 @@ app.post('/api/login', (req, res) => {
     });
 });
 
-// Получить посты галереи
+// Получить посты
 app.get('/api/posts', (req, res) => {
     db.all(`SELECT * FROM posts ORDER BY id DESC`, [], (err, rows) => {
         if (err) return res.status(500).json({ error: 'Ошибка загрузки постов' });
@@ -102,7 +97,7 @@ app.get('/api/posts', (req, res) => {
     });
 });
 
-// Загрузка поста
+// Загрузить пост с картинкой
 app.post('/api/posts', upload.single('image'), (req, res) => {
     const { caption, username } = req.body;
     if (!req.file) return res.status(400).json({ error: 'Картинка не загружена' });
@@ -113,7 +108,7 @@ app.post('/api/posts', upload.single('image'), (req, res) => {
         [imageUrl, caption, username || 'Аноним'],
         function(err) {
             if (err) return res.status(500).json({ error: 'Ошибка сохранения поста' });
-            res.json({ success: true, postId: this.lastID });
+            res.json({ success: true });
         }
     );
 });
