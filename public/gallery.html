@@ -25,9 +25,19 @@
         <h3>Загрузить скриншот</h3>
         <input type="file" id="imageFile" accept="image/*">
         <textarea id="imageCaption" placeholder="Подпись к фото..." rows="2"></textarea>
-        <button class="btn" onclick="uploadPost()">Опубликовать</button>
+        
+        <!-- Хотбар загрузки (прогресс-бар) -->
+        <div id="progressContainer" class="progress-container">
+            <div class="progress-bar-bg"><div id="progressBarFill" class="progress-bar-fill"></div></div>
+            <div class="progress-actions">
+                <span id="progressText">Загрузка: 0%</span>
+                <button type="button" class="cancel-btn" onclick="cancelUpload()">Отмена</button>
+            </div>
+        </div>
+
+        <button id="publishBtn" class="btn" onclick="uploadPost()">Опубликовать</button>
     </div>
-    <p id="loginPrompt" style="color: var(--text-secondary);">Войдите в аккаунт, чтобы загружать скриншоты.</p>
+    <p id="loginPrompt" style="color: var(--text-secondary);">Войдите в аккаунт, чтобы загружать скриншоты и ставить лайки.</p>
 
     <div id="postsFeed" style="margin-top: 20px;">Загрузка постов...</div>
 </div>
@@ -38,7 +48,8 @@
         <span class="close-modal" onclick="closeAuthModal()">&times;</span>
         <h2 id="modalTitle" style="color: var(--accent); margin-top:0;">Вход</h2>
         
-        <input type="text" id="authUsername" placeholder="Юзернейм (мин. 5 символов)">
+        <input type="text" id="authLoginInput" placeholder="Юзернейм или Email">
+        <div id="usernameField" style="display: none;"><input type="text" id="authUsername" placeholder="Юзернейм (мин. 5 символов)"></div>
         <div id="emailField"><input type="email" id="authEmail" placeholder="Email"></div>
         <input type="password" id="authPassword" placeholder="Пароль">
         
@@ -50,8 +61,13 @@
     </div>
 </div>
 
+<!-- Всплывающее уведомление снизу -->
+<div id="toast">Самолайк залог успеха</div>
+
 <script>
     let isLoginMode = true;
+    let currentXHR = null; // для отмены загрузки
+
     function openAuthModal(login) { isLoginMode = login; document.getElementById('authModal').style.display = 'flex'; updateUI(); }
     function closeAuthModal() { document.getElementById('authModal').style.display = 'none'; }
     function toggleAuthMode() { isLoginMode = !isLoginMode; updateUI(); }
@@ -59,19 +75,20 @@
     function updateUI() {
         document.getElementById('modalTitle').innerText = isLoginMode ? "Вход" : "Регистрация";
         document.getElementById('modalActionBtn').innerText = isLoginMode ? "Войти" : "Зарегистрироваться";
+        document.getElementById('authLoginInput').style.display = isLoginMode ? "block" : "none";
+        document.getElementById('usernameField').style.display = isLoginMode ? "none" : "block";
         document.getElementById('emailField').style.display = isLoginMode ? "none" : "block";
         document.getElementById('modalSwitchText').innerHTML = isLoginMode ? 'Нет аккаунта? <span onclick="toggleAuthMode()" style="color:var(--accent);">Зарегистрироваться</span>' : 'Уже есть аккаунт? <span onclick="toggleAuthMode()" style="color:var(--accent);">Войти</span>';
     }
 
     async function submitAuth() {
-        const username = document.getElementById('authUsername').value;
         const password = document.getElementById('authPassword').value;
-        const email = document.getElementById('emailField').style.display !== 'none' ? document.getElementById('authEmail').value : '';
-
-        if (!isLoginMode && username.length < 5) return alert("Юзернейм должен быть не менее 5 символов!");
-
         const url = isLoginMode ? '/api/login' : '/api/register';
-        const body = isLoginMode ? { username, password } : { username, email, password };
+        const body = isLoginMode 
+            ? { login: document.getElementById('authLoginInput').value, password } 
+            : { username: document.getElementById('authUsername').value, email: document.getElementById('authEmail').value, password };
+
+        if (!isLoginMode && document.getElementById('authUsername').value.length < 5) return alert("Юзернейм должен быть не менее 5 символов!");
 
         const res = await fetch(url, {
             method: 'POST',
@@ -94,13 +111,19 @@
         if(authPanel) {
             authPanel.innerHTML = `👤 <b>${user.username}</b> <button onclick="localStorage.removeItem('user'); location.reload();" style="background:#f85149; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; margin-left:8px;">Выйти</button>`;
         }
-        const uploadSection = document.getElementById('uploadSection');
-        if(uploadSection) uploadSection.style.display = 'block';
-        const loginPrompt = document.getElementById('loginPrompt');
-        if(loginPrompt) loginPrompt.style.display = 'none';
+        document.getElementById('uploadSection').style.display = 'block';
+        document.getElementById('loginPrompt').style.display = 'none';
     }
 
-    async function uploadPost() {
+    // Уведомление снизу
+    function showToast() {
+        const toast = document.getElementById("toast");
+        toast.className = "show";
+        setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 3000);
+    }
+
+    // Загрузка поста с прогресс-баром и отменой
+    function uploadPost() {
         const fileInput = document.getElementById('imageFile');
         const caption = document.getElementById('imageCaption').value;
         if (!fileInput.files[0]) return alert("Выберите картинку!");
@@ -110,16 +133,93 @@
         formData.append('caption', caption);
         formData.append('username', user.username);
 
-        alert("Загрузка...");
-        const res = await fetch('/api/posts', { method: 'POST', body: formData });
+        document.getElementById('progressContainer').style.display = 'block';
+        document.getElementById('publishBtn').style.display = 'none';
+
+        currentXHR = new XMLHttpRequest();
+        currentXHR.open('POST', '/api/posts', true);
+
+        currentXHR.upload.onprogress = function(e) {
+            if (e.lengthComputable) {
+                const percent = Math.round((e.loaded / e.total) * 100);
+                document.getElementById('progressBarFill').style.width = percent + '%';
+                document.getElementById('progressText').innerText = `Загрузка: ${percent}%`;
+            }
+        };
+
+        currentXHR.onload = function() {
+            document.getElementById('progressContainer').style.display = 'none';
+            document.getElementById('publishBtn').style.display = 'block';
+            if (currentXHR.status === 200) {
+                alert("Пост опубликован!");
+                fileInput.value = '';
+                document.getElementById('imageCaption').value = '';
+                loadPosts();
+            } else {
+                alert("Ошибка загрузки");
+            }
+            currentXHR = null;
+        };
+
+        currentXHR.onerror = function() {
+            alert("Ошибка сети");
+            resetProgress();
+        };
+
+        currentXHR.send(formData);
+    }
+
+    function cancelUpload() {
+        if (currentXHR) {
+            currentXHR.abort();
+            resetProgress();
+            alert("Загрузка отменена.");
+        }
+    }
+
+    function resetProgress() {
+        document.getElementById('progressContainer').style.display = 'none';
+        document.getElementById('publishBtn').style.display = 'block';
+        document.getElementById('progressBarFill').style.width = '0%';
+        document.getElementById('progressText').innerText = 'Загрузка: 0%';
+    }
+
+    // Лайки
+    async function toggleLike(postId, author) {
+        if (!user) return openAuthModal(true);
+
+        // Если лайкает себя — показываем плашку
+        if (author === user.username) {
+            showToast();
+        }
+
+        const res = await fetch(`/api/posts/${postId}/like`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: user.username })
+        });
         const data = await res.json();
         if (data.success) {
-            alert("Пост опубликован!");
-            fileInput.value = '';
-            document.getElementById('imageCaption').value = '';
             loadPosts();
-        } else {
-            alert(data.error);
+        }
+    }
+
+    // Комментарии
+    async function addComment(postId) {
+        if (!user) return openAuthModal(true);
+        const input = document.getElementById(`commentInput_${postId}`);
+        const text = input.value;
+        if (!text.trim()) return;
+
+        const res = await fetch(`/api/posts/${postId}/comment`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: user.username, text })
+        });
+        const data = await res.json();
+        if (data.success) {
+            input.value = '';
+            loadPosts();
         }
     }
 
@@ -135,11 +235,36 @@
 
         feed.innerHTML = "";
         posts.forEach(post => {
+            const likesCount = post.likes ? post.likes.length : 0;
+            const isLiked = user && post.likes && post.likes.includes(user.username);
+            const likeColor = isLiked ? '#f85149' : 'var(--text-secondary)';
+
+            let commentsHtml = '';
+            if (post.comments) {
+                post.comments.forEach(c => {
+                    commentsHtml += `<div style="font-size: 13px; margin-bottom: 4px;"><b style="color:var(--accent);">${c.author}:</b> ${c.text}</div>`;
+                });
+            }
+
             feed.innerHTML += `
-                <div style="background:var(--box-bg); border-radius:8px; padding:15px; margin-bottom:15px; border:1px solid var(--border);">
+                <div style="background:var(--box-bg); border-radius:8px; padding:15px; margin-bottom:20px; border:1px solid var(--border);">
                     <p style="margin:0 0 5px 0; color:var(--accent); font-size:13px;"><b>${post.author}</b></p>
                     <p style="margin:0 0 10px 0;">${post.caption || ''}</p>
                     <img src="${post.imageUrl}" style="width:100%; border-radius:6px; max-height:400px; object-fit:cover;">
+                    
+                    <div style="display: flex; align-items: center; gap: 8px; margin-top: 12px;">
+                        <button onclick="toggleLike(${post.id}, '${post.author}')" style="background:none; border:none; cursor:pointer; color:${likeColor}; font-size: 16px; display:flex; align-items:center; gap:5px;">
+                            ❤️ <span>${likesCount}</span>
+                        </button>
+                    </div>
+
+                    <div style="margin-top: 12px; border-top: 1px solid var(--border); padding-top: 10px;">
+                        <div style="max-height: 120px; overflow-y: auto; margin-bottom: 8px;">${commentsHtml || '<span style="color:var(--text-secondary); font-size:12px;">Нет комментариев</span>'}</div>
+                        <div style="display: flex; gap: 8px;">
+                            <input type="text" id="commentInput_${post.id}" placeholder="Написать комментарий..." style="margin:0; padding:6px 10px; font-size:13px;">
+                            <button onclick="addComment(${post.id})" class="btn" style="width: auto; padding: 6px 12px; font-size: 13px;">Отправить</button>
+                        </div>
+                    </div>
                 </div>
             `;
         });
