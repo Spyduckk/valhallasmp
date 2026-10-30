@@ -24,7 +24,7 @@
         <p class="subtitle">Ванильный сервер Minecraft</p>
     </header>
 
-    <div class="ip-card" onclick="navigator.clipboard.writeText('mc.valhallasmp.online:32998'); alert('IP скопирован!');">
+    <div class="ip-card" onclick="navigator.clipboard.writeText('mc.valhallasmp.online:32998'); alert('IP скопирован в буфер обмена!');">
         <span class="ip-title">IP-адрес сервера (нажми, чтобы скопировать):</span>
         <div class="ip-address">mc.valhallasmp.online:32998</div>
     </div>
@@ -36,7 +36,7 @@
 
     <section class="rules" style="text-align: center; padding: 25px;">
         <h2>Добро пожаловать на ValhallaSMP!</h2>
-        <p style="color: var(--text-secondary); margin-bottom: 15px;">Перед началом игры обязательно ознакомьтесь с регламентом и правилами нашего сервера во вкладке сверху.</p>
+        <p style="color: var(--text-secondary); margin-bottom: 15px;">Перед началом игры обязательно ознакомьтесь с регламентом и правилами нашего сервера.</p>
         <a href="rules.html" class="btn" style="display: inline-block; width: auto; text-decoration: none;">Читать правила</a>
     </section>
 </div>
@@ -46,10 +46,13 @@
     <div class="modal-content">
         <span class="close-modal" onclick="closeAuthModal()">&times;</span>
         <h2 id="modalTitle" style="color: var(--accent); margin-top:0;">Вход</h2>
-        <div id="usernameField" style="display: none;"><input type="text" id="authUsername" placeholder="Юзернейм (мин. 5 символов)"></div>
-        <input type="email" id="authEmail" placeholder="Email">
+        
+        <input type="text" id="authUsername" placeholder="Юзернейм (мин. 5 символов)">
+        <div id="emailField"><input type="email" id="authEmail" placeholder="Email"></div>
         <input type="password" id="authPassword" placeholder="Пароль">
+        
         <button class="btn" id="modalActionBtn" onclick="submitAuth()">Войти</button>
+        
         <div id="modalSwitchText" style="margin-top:15px; text-align:center; font-size:14px; color:var(--text-secondary); cursor:pointer;">
             Нет аккаунта? <span onclick="toggleAuthMode()" style="color:var(--accent);">Зарегистрироваться</span>
         </div>
@@ -61,22 +64,23 @@
     function openAuthModal(login) { isLoginMode = login; document.getElementById('authModal').style.display = 'flex'; updateUI(); }
     function closeAuthModal() { document.getElementById('authModal').style.display = 'none'; }
     function toggleAuthMode() { isLoginMode = !isLoginMode; updateUI(); }
+    
     function updateUI() {
         document.getElementById('modalTitle').innerText = isLoginMode ? "Вход" : "Регистрация";
         document.getElementById('modalActionBtn').innerText = isLoginMode ? "Войти" : "Зарегистрироваться";
-        document.getElementById('usernameField').style.display = isLoginMode ? "none" : "block";
+        document.getElementById('emailField').style.display = isLoginMode ? "none" : "block";
         document.getElementById('modalSwitchText').innerHTML = isLoginMode ? 'Нет аккаунта? <span onclick="toggleAuthMode()" style="color:var(--accent);">Зарегистрироваться</span>' : 'Уже есть аккаунт? <span onclick="toggleAuthMode()" style="color:var(--accent);">Войти</span>';
     }
 
     async function submitAuth() {
-        const email = document.getElementById('authEmail').value;
-        const password = document.getElementById('authPassword').value;
         const username = document.getElementById('authUsername').value;
-
-        const url = isLoginMode ? '/api/login' : '/api/register';
-        const body = isLoginMode ? { email, password } : { username, email, password };
+        const password = document.getElementById('authPassword').value;
+        const email = document.getElementById('emailField').style.display !== 'none' ? document.getElementById('authEmail').value : '';
 
         if (!isLoginMode && username.length < 5) return alert("Юзернейм должен быть не менее 5 символов!");
+
+        const url = isLoginMode ? '/api/login' : '/api/register';
+        const body = isLoginMode ? { username, password } : { username, email, password };
 
         const res = await fetch(url, {
             method: 'POST',
@@ -95,7 +99,10 @@
 
     const user = JSON.parse(localStorage.getItem('user'));
     if (user) {
-        document.getElementById('authPanel').innerHTML = `👤 <b>${user.username}</b> <button onclick="localStorage.removeItem('user'); location.reload();" style="background:#f43f5e; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;">Выйти</button>`;
+        const authPanel = document.getElementById('authPanel');
+        if(authPanel) {
+            authPanel.innerHTML = `👤 <b>${user.username}</b> <button onclick="localStorage.removeItem('user'); location.reload();" style="background:#f85149; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; margin-left:8px;">Выйти</button>`;
+        }
     }
 </script>
 </body>
