@@ -47,7 +47,7 @@ function addNotification(db, username, text) {
     }
 }
 
-// Регистрация (первый зарегистрированный пользователь автоматически становится 'admin')
+// Регистрация
 app.post('/api/register', (req, res) => {
     const { username, email, password } = req.body;
     if (!username || username.length < 5) return res.status(400).json({ error: 'Юзернейм от 5 символов!' });
@@ -63,13 +63,13 @@ app.post('/api/register', (req, res) => {
         username, 
         email, 
         password, 
-        role, // 'user', 'moderator', 'admin'
+        role, 
         bio: 'Игрок сервера ValhallaSMP 26.2', 
         avatarUrl: '',
         notifications: []
     });
     writeDB(db);
-    res.json({ success: true, username, email, role });
+    res.json({ success: true, username, email, role, avatarUrl: '' });
 });
 
 // Вход
@@ -81,7 +81,7 @@ app.post('/api/login', (req, res) => {
     const user = db.users.find(u => (u.username.toLowerCase() === login.toLowerCase() || u.email.toLowerCase() === login.toLowerCase()) && u.password === password);
     
     if (!user) return res.status(400).json({ error: 'Неверный логин или пароль.' });
-    res.json({ success: true, username: user.username, email: user.email, role: user.role || 'user' });
+    res.json({ success: true, username: user.username, email: user.email, role: user.role || 'user', avatarUrl: user.avatarUrl || '' });
 });
 
 // Получить посты
@@ -111,11 +111,10 @@ app.post('/api/posts', upload.single('image'), (req, res) => {
     res.json({ success: true });
 });
 
-// Удаление поста (автор, модер или админ)
+// Удаление поста
 app.delete('/api/posts/:id', (req, res) => {
     const postId = Number(req.params.id);
     const { username } = req.body;
-
     const db = readDB();
     const postIndex = db.posts.findIndex(p => p.id === postId);
     if (postIndex === -1) return res.status(404).json({ error: 'Пост не найден' });
@@ -124,9 +123,7 @@ app.delete('/api/posts/:id', (req, res) => {
     const isOwner = db.posts[postIndex].author.toLowerCase() === username.toLowerCase();
     const isAdminOrMod = user && (user.role === 'admin' || user.role === 'moderator');
 
-    if (!isOwner && !isAdminOrMod) {
-        return res.status(403).json({ error: 'Недостаточно прав для удаления этого фото!' });
-    }
+    if (!isOwner && !isAdminOrMod) return res.status(403).json({ error: 'Недостаточно прав!' });
 
     db.posts.splice(postIndex, 1);
     writeDB(db);
@@ -202,7 +199,7 @@ app.post('/api/posts/:postId/comment/:commentId/reply', (req, res) => {
     res.json({ success: true });
 });
 
-// Удаление комментария (автор, модер или админ)
+// Удаление комментария
 app.delete('/api/posts/:postId/comment/:commentId', (req, res) => {
     const postId = Number(req.params.postId);
     const commentId = Number(req.params.commentId);
@@ -239,22 +236,36 @@ app.delete('/api/posts/:postId/comment/:commentId', (req, res) => {
     res.json({ success: true });
 });
 
-// Смена роли пользователю (доступно ТОЛЬКО админу)
-app.post('/api/admin/set-role', (req, res) => {
-    const { adminUsername, targetUsername, newRole } = req.body;
+// Админ-панель: изменение роли и статуса (био) игрока
+app.post('/api/admin/update-user', (req, res) => {
+    const { adminUsername, targetUsername, newRole, newBio } = req.body;
     const db = readDB();
 
     const admin = db.users.find(u => u.username.toLowerCase() === adminUsername.toLowerCase());
-    if (!admin || admin.role !== 'admin') {
-        return res.status(403).json({ error: 'Только администратор может изменять роли!' });
+    if (!admin || (admin.role !== 'admin' && admin.role !== 'moderator')) {
+        return res.status(403).json({ error: 'Недостаточно прав!' });
     }
 
     const target = db.users.find(u => u.username.toLowerCase() === targetUsername.toLowerCase());
     if (!target) return res.status(404).json({ error: 'Пользователь не найден' });
 
-    target.role = newRole; // 'user', 'moderator', 'admin'
+    if (newRole && admin.role === 'admin') target.role = newRole;
+    if (newBio !== undefined) target.bio = newBio;
+
     writeDB(db);
-    res.json({ success: true });
+    res.json({ success: true, role: target.role, bio: target.bio });
+});
+
+// Смена собственной аватарки
+app.post('/api/user/update-avatar', upload.single('avatar'), (req, res) => {
+    const { username } = req.body;
+    const db = readDB();
+    const user = db.users.find(u => u.username.toLowerCase() === username.toLowerCase());
+    if (!user) return res.status(404).json({ error: 'Пользователь не найден' });
+
+    if (req.file) user.avatarUrl = `/uploads/${req.file.filename}`;
+    writeDB(db);
+    res.json({ success: true, avatarUrl: user.avatarUrl });
 });
 
 // Профиль игрока
@@ -274,19 +285,6 @@ app.get('/api/user/:username', (req, res) => {
         postsCount: userPosts.length,
         posts: userPosts.reverse()
     });
-});
-
-app.post('/api/user/update', upload.single('avatar'), (req, res) => {
-    const { username, bio } = req.body;
-    const db = readDB();
-    const user = db.users.find(u => u.username.toLowerCase() === username.toLowerCase());
-    if (!user) return res.status(404).json({ error: 'Пользователь не найден' });
-
-    if (bio !== undefined) user.bio = bio;
-    if (req.file) user.avatarUrl = `/uploads/${req.file.filename}`;
-
-    writeDB(db);
-    res.json({ success: true, bio: user.bio, avatarUrl: user.avatarUrl });
 });
 
 app.post('/api/user/notifications/clear', (req, res) => {
