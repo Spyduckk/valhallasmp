@@ -1,5 +1,5 @@
 :root {
-    --bg-main: #0e1117;
+    --bg-main: #0d1117;
     --card-bg: #161b22;
     --box-bg: #21262d;
     --border: #30363d;
@@ -15,14 +15,79 @@ body {
     color: var(--text);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     margin: 0;
-    padding: 40px 20px;
-    display: flex;
-    justify-content: center;
+    padding: 0;
 }
 
+/* Верхняя навигация в стиле GitHub Header */
+.gh-header {
+    background-color: #010409;
+    border-bottom: 1px solid var(--border);
+    padding: 12px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+.gh-nav-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.gh-logo {
+    font-size: 18px;
+    font-weight: bold;
+    color: #fff;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.gh-subpath {
+    color: var(--text-secondary);
+    font-size: 16px;
+}
+
+.gh-nav-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* Вкладки разделов под шапкой */
+.gh-subnav {
+    background-color: var(--card-bg);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    display: flex;
+    gap: 16px;
+}
+
+.gh-tab {
+    padding: 12px 16px;
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    border-bottom: 2px solid transparent;
+    transition: 0.2s;
+}
+
+.gh-tab:hover { color: var(--text); }
+.gh-tab.active {
+    color: var(--text);
+    border-bottom-color: #f78166; /* фирменный GitHub оранжево-красный акцент активной вкладки */
+    font-weight: 600;
+}
+
+/* Центральный контейнер контента */
 .container {
-    max-width: 750px;
-    width: 100%;
+    max-width: 900px;
+    margin: 30px auto;
     background: var(--card-bg);
     padding: 30px;
     border-radius: 12px;
@@ -30,33 +95,7 @@ body {
     border: 1px solid var(--border);
 }
 
-.nav {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 30px;
-    border-bottom: 1px solid var(--border);
-    padding-bottom: 15px;
-}
-
-.nav-tabs { display: flex; gap: 8px; align-items: center; }
-
-.tab-btn {
-    background: transparent;
-    border: 1px solid transparent;
-    color: var(--text-secondary);
-    padding: 6px 14px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 14px;
-    font-weight: 500;
-    text-decoration: none;
-    transition: 0.2s;
-}
-
-.tab-btn:hover { color: var(--text); background: var(--box-bg); }
-.tab-btn.active { color: var(--text); background: var(--box-bg); border-color: var(--border); }
-
+/* Кнопка входа / аватарка */
 .login-btn {
     background: #238636;
     color: white;
@@ -135,28 +174,23 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--a
 }
 .btn:hover { background: var(--accent-hover); }
 
-/* Выпадающие уведомления (колокольчик) */
+/* Выпадающие уведомления */
 .notif-dropdown {
     display: none;
     position: absolute;
     right: 20px;
-    top: 70px;
+    top: 60px;
     width: 280px;
     background: var(--card-bg);
     border: 1px solid var(--border);
     border-radius: 8px;
     box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-    z-index: 200;
+    z-index: 2000;
     padding: 12px;
 }
-.notif-item {
-    font-size: 12px;
-    padding: 6px 0;
-    border-bottom: 1px solid var(--border);
-    color: var(--text);
-}
+.notif-item { font-size: 12px; padding: 6px 0; border-bottom: 1px solid var(--border); color: var(--text); }
 
-/* Комментарии и ответы */
+/* Комментарии */
 .comment-box { font-size: 13px; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid rgba(48, 54, 61, 0.5); }
 .reply-box { margin-left: 20px; margin-top: 6px; padding-left: 10px; border-left: 2px solid var(--accent); font-size: 12px; }
 .comment-actions { display: inline-flex; gap: 10px; margin-left: 10px; font-size: 11px; }
@@ -196,7 +230,7 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--a
 .modal {
     display: none;
     position: fixed;
-    z-index: 100;
+    z-index: 2000;
     left: 0; top: 0;
     width: 100%; height: 100%;
     background-color: rgba(14, 17, 23, 0.80);
