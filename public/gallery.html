@@ -27,9 +27,29 @@
 
     <h2>📸 Галерея сервера</h2>
 
+    <!-- Фильтр по категориям -->
+    <div style="margin-bottom: 20px; display: flex; gap: 8px; align-items: center;">
+        <span style="font-size: 13px; color: var(--text-secondary);">Категория:</span>
+        <select id="categoryFilter" onchange="loadPosts()" style="margin:0; width: 180px; padding: 6px; font-size: 13px;">
+            <option value="all">Все категории</option>
+            <option value="Постройки">Постройки</option>
+            <option value="Фермы">Фермы</option>
+            <option value="Ивенты">Ивенты</option>
+            <option value="Красивые виды">Красивые виды</option>
+            <option value="Разное">Разное</option>
+        </select>
+    </div>
+
     <div id="uploadSection" style="display:none;" class="form-group">
         <h3>Загрузить скриншот</h3>
         <input type="file" id="imageFile" accept="image/*">
+        <select id="imageCategory" style="margin-bottom: 8px;">
+            <option value="Постройки">Постройки</option>
+            <option value="Фермы">Фермы</option>
+            <option value="Ивенты">Ивенты</option>
+            <option value="Красивые виды">Красивые виды</option>
+            <option value="Разное">Разное</option>
+        </select>
         <textarea id="imageCaption" placeholder="Подпись к фото..." rows="2"></textarea>
         
         <div id="progressContainer" class="progress-container">
@@ -52,14 +72,11 @@
     <div class="modal-content">
         <span class="close-modal" onclick="closeAuthModal()">&times;</span>
         <h2 id="modalTitle" style="color: var(--accent); margin-top:0;">Вход</h2>
-        
         <input type="text" id="authLoginInput" placeholder="Юзернейм или Email">
         <div id="usernameField" style="display: none;"><input type="text" id="authUsername" placeholder="Юзернейм (мин. 5 символов)"></div>
         <div id="emailField"><input type="email" id="authEmail" placeholder="Email"></div>
         <input type="password" id="authPassword" placeholder="Пароль">
-        
         <button class="btn" id="modalActionBtn" onclick="submitAuth()">Войти</button>
-        
         <div id="modalSwitchText" style="margin-top:15px; text-align:center; font-size:14px; color:var(--text-secondary); cursor:pointer;">
             Нет аккаунта? <span onclick="toggleAuthMode()" style="color:var(--accent);">Зарегистрироваться</span>
         </div>
@@ -110,14 +127,53 @@
         if (query) window.location.href = `profile.html?user=${encodeURIComponent(query)}`;
     }
 
-    const user = JSON.parse(localStorage.getItem('user'));
-    if (user) {
+    async function checkAuthUserPanel() {
+        const user = JSON.parse(localStorage.getItem('user'));
+        if (!user) return;
+
+        // Подгружаем актуальные уведомления для колокольчика
+        const res = await fetch(`/api/user/${encodeURIComponent(user.username)}`);
+        const userData = res.ok ? await res.json() : { notifications: [] };
+        const unreadCount = userData.notifications ? userData.notifications.length : 0;
+
+        let notifHtml = '';
+        if (unreadCount > 0) {
+            userData.notifications.forEach(n => {
+                notifHtml += `<div class="notif-item">🔔 ${n.text} <span style="color:var(--text-secondary); font-size:10px;">(${n.time})</span></div>`;
+            });
+            notifHtml += `<button onclick="clearNotifications()" class="btn" style="margin-top:8px; padding:4px; font-size:11px;">Очистить</button>`;
+        } else {
+            notifHtml = `<div style="font-size:12px; color:var(--text-secondary); text-align:center;">Нет новых уведомлений</div>`;
+        }
+
         const authPanel = document.getElementById('authPanel');
         if(authPanel) {
-            authPanel.innerHTML = `👤 <a href="profile.html?user=${encodeURIComponent(user.username)}" style="color:var(--accent); text-decoration:none;"><b>${user.username}</b></a> <button onclick="localStorage.removeItem('user'); location.reload();" style="background:#f85149; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; margin-left:8px;">Выйти</button>`;
+            authPanel.innerHTML = `
+                <div style="position:relative; display:inline-block; margin-right: 10px;">
+                    <span onclick="toggleNotifMenu()" style="cursor:pointer; font-size:16px;" title="Уведомления">🔔<span id="notifBadge" style="background:#f85149; color:white; border-radius:50%; padding:1px 5px; font-size:10px; position:absolute; top:-5px; right:-10px; display:${unreadCount>0?'inline':'none'}">${unreadCount}</span></span>
+                    <div id="notifDropdown" class="notif-dropdown">${notifHtml}</div>
+                </div>
+                👤 <a href="profile.html?user=${encodeURIComponent(user.username)}" style="color:var(--accent); text-decoration:none;"><b>${user.username}</b></a> 
+                <button onclick="localStorage.removeItem('user'); location.reload();" style="background:#f85149; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; margin-left:8px;">Выйти</button>
+            `;
         }
         document.getElementById('uploadSection').style.display = 'block';
         document.getElementById('loginPrompt').style.display = 'none';
+    }
+
+    function toggleNotifMenu() {
+        const drop = document.getElementById('notifDropdown');
+        drop.style.display = drop.style.display === 'block' ? 'none' : 'block';
+    }
+
+    async function clearNotifications() {
+        const user = JSON.parse(localStorage.getItem('user'));
+        await fetch('/api/user/notifications/clear', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: user.username })
+        });
+        location.reload();
     }
 
     function showToast() {
@@ -127,13 +183,16 @@
     }
 
     function uploadPost() {
+        const user = JSON.parse(localStorage.getItem('user'));
         const fileInput = document.getElementById('imageFile');
         const caption = document.getElementById('imageCaption').value;
+        const category = document.getElementById('imageCategory').value;
         if (!fileInput.files[0]) return alert("Выберите картинку!");
 
         const formData = new FormData();
         formData.append('image', fileInput.files[0]);
         formData.append('caption', caption);
+        formData.append('category', category);
         formData.append('username', user.username);
 
         document.getElementById('progressContainer').style.display = 'block';
@@ -176,6 +235,7 @@
     }
 
     async function deletePost(postId) {
+        const user = JSON.parse(localStorage.getItem('user'));
         if (!confirm("Удалить эту фотографию?")) return;
         const res = await fetch(`/api/posts/${postId}`, {
             method: 'DELETE',
@@ -183,14 +243,12 @@
             body: JSON.stringify({ username: user.username })
         });
         const data = await res.json();
-        if (data.success) {
-            loadPosts();
-        } else {
-            alert(data.error);
-        }
+        if (data.success) loadPosts();
+        else alert(data.error);
     }
 
     async function toggleLike(postId, author) {
+        const user = JSON.parse(localStorage.getItem('user'));
         if (!user) return openAuthModal(true);
         if (author === user.username) showToast();
 
@@ -204,6 +262,7 @@
     }
 
     async function addComment(postId) {
+        const user = JSON.parse(localStorage.getItem('user'));
         if (!user) return openAuthModal(true);
         const input = document.getElementById(`commentInput_${postId}`);
         const text = input.value;
@@ -222,12 +281,14 @@
     }
 
     function showReplyInput(postId, commentId) {
+        const user = JSON.parse(localStorage.getItem('user'));
         if (!user) return openAuthModal(true);
         const box = document.getElementById(`replyBox_${postId}_${commentId}`);
         box.style.display = box.style.display === 'none' ? 'block' : 'none';
     }
 
     async function sendReply(postId, commentId) {
+        const user = JSON.parse(localStorage.getItem('user'));
         const input = document.getElementById(`replyInput_${postId}_${commentId}`);
         const text = input.value;
         if (!text.trim()) return;
@@ -242,6 +303,7 @@
     }
 
     async function deleteComment(postId, commentId, isReply = false, parentId = null) {
+        const user = JSON.parse(localStorage.getItem('user'));
         if (!confirm("Удалить этот комментарий?")) return;
         const res = await fetch(`/api/posts/${postId}/comment/${commentId}`, {
             method: 'DELETE',
@@ -254,17 +316,21 @@
     }
 
     async function loadPosts() {
+        const user = JSON.parse(localStorage.getItem('user'));
+        const filterCategory = document.getElementById('categoryFilter').value;
         const feed = document.getElementById('postsFeed');
         const res = await fetch('/api/posts');
         const posts = await res.json();
         
-        if (posts.length === 0) {
-            feed.innerHTML = "<p style='color:var(--text-secondary); text-align:center;'>Пока нет скриншотов. Будь первым!</p>";
+        const filteredPosts = posts.filter(p => filterCategory === 'all' || p.category === filterCategory);
+
+        if (filteredPosts.length === 0) {
+            feed.innerHTML = "<p style='color:var(--text-secondary); text-align:center;'>В этой категории пока нет скриншотов.</p>";
             return;
         }
 
         feed.innerHTML = "";
-        posts.forEach(post => {
+        filteredPosts.forEach(post => {
             const likesCount = post.likes ? post.likes.length : 0;
             const isLiked = user && post.likes && post.likes.includes(user.username);
             const likeColor = isLiked ? '#f85149' : 'var(--text-secondary)';
@@ -307,7 +373,7 @@
             feed.innerHTML += `
                 <div style="background:var(--box-bg); border-radius:8px; padding:15px; margin-bottom:20px; border:1px solid var(--border);">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 5px;">
-                        <p style="margin:0; font-size:13px;"><b>Автор:</b> <a href="profile.html?user=${encodeURIComponent(post.author)}" style="color:var(--accent); text-decoration:none;">${post.author}</a></p>
+                        <p style="margin:0; font-size:13px;"><b>Автор:</b> <a href="profile.html?user=${encodeURIComponent(post.author)}" style="color:var(--accent); text-decoration:none;">${post.author}</a> <span style="background:var(--card-bg); padding:2px 6px; border-radius:4px; font-size:11px; color:var(--text-secondary); margin-left:8px;">📁 ${post.category || 'Разное'}</span></p>
                         ${deletePostBtn}
                     </div>
                     <p style="margin:0 0 10px 0;">${post.caption || ''}</p>
@@ -331,6 +397,7 @@
         });
     }
 
+    checkAuthUserPanel();
     loadPosts();
 </script>
 </body>
