@@ -8,20 +8,18 @@
 </head>
 <body>
 
-<!-- GitHub Header -->
 <header class="gh-header">
     <div class="gh-nav-left">
-        <a href="index.html" class="gh-logo">🐙 ValhallaSMP <span class="gh-subpath">/ профиль</span></a>
+        <a href="index.html" class="gh-logo">☃️ ValhallaSMP <span class="gh-subpath">/ профиль</span></a>
     </div>
     <div class="gh-nav-right">
-        <input type="text" id="searchInput" placeholder="Type / to search" style="margin:0; padding:5px 10px; width:180px; font-size:13px;" onkeydown="if(event.key === 'Enter') searchUser()">
+        <input type="text" id="searchInput" placeholder="Type / to search" style="margin:0; padding:5px 10px; width:180px; font-size:13px;" onkeydown="if(event.key === 'Enter') searchSite()">
         <div class="auth-panel" id="authPanel">
             <button class="login-btn" onclick="openAuthModal(true)">Sign in</button>
         </div>
     </div>
 </header>
 
-<!-- GitHub Sub-navigation -->
 <nav class="gh-subnav">
     <a href="index.html" class="gh-tab">🏠 Главная</a>
     <a href="gallery.html" class="gh-tab">📸 Галерея</a>
@@ -29,7 +27,6 @@
 </nav>
 
 <div class="container">
-    <!-- Инфо профиля -->
     <div class="form-group" style="text-align: center;">
         <div id="avatarContainer" style="margin-bottom: 10px;">
             <span id="defaultAvatar" style="font-size: 60px;">👤</span>
@@ -40,7 +37,6 @@
         <p id="profileRoleBadge" style="font-size: 12px; font-weight: bold; margin: 0 0 5px 0;"></p>
         <p id="profileBio" style="color: var(--text-secondary); font-size: 14px; margin: 0 0 15px 0;"></p>
         
-        <!-- Панель Администратора / Модератора (только для них) -->
         <div id="adminPanel" style="display:none; margin-bottom: 15px; background:var(--card-bg); padding:10px; border-radius:6px; border:1px solid var(--border);">
             <p style="font-size: 12px; margin: 0 0 6px 0; color:var(--accent);">⚙️ Управление пользователем:</p>
             <div id="roleSelectWrapper" style="margin-bottom: 6px;">
@@ -56,7 +52,6 @@
             <button onclick="adminUpdateUser()" class="btn" style="width: auto; padding: 4px 10px; font-size: 12px;">Сохранить изменения</button>
         </div>
 
-        <!-- Настройки своей аватарки -->
         <div id="editAvatarSection" style="display:none; margin-top: 15px; border-top: 1px solid var(--border); padding-top: 15px;">
             <label style="font-size: 13px; color: var(--text-secondary); display: block; text-align: left; margin-bottom: 4px;">Сменить аватарку:</label>
             <input type="file" id="newAvatarFile" accept="image/*" style="margin-bottom: 8px;">
@@ -72,7 +67,6 @@
     <div id="userPostsFeed">Загрузка постов...</div>
 </div>
 
-<!-- Модалка авторизации -->
 <div id="authModal" class="modal">
     <div class="modal-content" onkeydown="if(event.key === 'Enter') submitAuth()">
         <span class="close-modal" onclick="closeAuthModal()">&times;</span>
@@ -87,9 +81,9 @@
     const urlParams = new URLSearchParams(window.location.search);
     const targetUser = urlParams.get('user');
 
-    function searchUser() {
+    function searchSite() {
         const query = document.getElementById('searchInput').value.trim();
-        if (query) window.location.href = `profile.html?user=${encodeURIComponent(query)}`;
+        if (query) window.location.href = `search.html?q=${encodeURIComponent(query)}`;
     }
 
     async function loadProfile() {
@@ -137,7 +131,6 @@
                 document.getElementById('adminPanel').style.display = 'block';
                 document.getElementById('adminBioInput').value = data.bio;
                 
-                // Только админ может менять роли
                 if (currentUser.role === 'admin') {
                     document.getElementById('roleSelect').value = data.role;
                 } else {
