@@ -14,6 +14,13 @@
             <a href="gallery.html" class="tab-btn">Галерея</a>
             <a href="rules.html" class="tab-btn">Правила</a>
         </div>
+        
+        <!-- Поиск игроков -->
+        <div style="display: flex; gap: 6px; align-items: center;">
+            <input type="text" id="searchInput" placeholder="Найти игрока..." style="margin:0; padding:5px 10px; width:130px; font-size:13px;">
+            <button onclick="searchUser()" class="btn" style="width:auto; padding:5px 10px; font-size:13px;">🔍</button>
+        </div>
+
         <div class="auth-panel" id="authPanel">
             <button class="login-btn" onclick="openAuthModal(true)">Войти / Регистрация</button>
         </div>
@@ -36,7 +43,7 @@
 
     <section class="rules" style="text-align: center; padding: 25px;">
         <h2>Добро пожаловать на ValhallaSMP!</h2>
-        <p style="color: var(--text-secondary); margin-bottom: 15px;">Перед началом игры обязательно ознакомьтесь с правилами нашего сервера.</p>
+        <p style="color: var(--text-secondary); margin-bottom: 15px;">Исследуйте галерею, общайтесь и находите профили других игроков.</p>
         <a href="rules.html" class="btn" style="display: inline-block; width: auto; text-decoration: none;">Читать правила</a>
     </section>
 </div>
@@ -47,7 +54,6 @@
         <span class="close-modal" onclick="closeAuthModal()">&times;</span>
         <h2 id="modalTitle" style="color: var(--accent); margin-top:0;">Вход</h2>
         
-        <!-- При входе можно ввести ник ИЛИ почту -->
         <input type="text" id="authLoginInput" placeholder="Юзернейм или Email">
         <div id="usernameField" style="display: none;"><input type="text" id="authUsername" placeholder="Юзернейм (мин. 5 символов)"></div>
         <div id="emailField"><input type="email" id="authEmail" placeholder="Email"></div>
@@ -60,8 +66,6 @@
         </div>
     </div>
 </div>
-
-<div id="toast">Самолайк залог успеха</div>
 
 <script>
     let isLoginMode = true;
@@ -87,11 +91,7 @@
 
         if (!isLoginMode && document.getElementById('authUsername').value.length < 5) return alert("Юзернейм должен быть не менее 5 символов!");
 
-        const res = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body)
-        });
+        const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
         const data = await res.json();
         if (data.success) {
             localStorage.setItem('user', JSON.stringify(data));
@@ -102,11 +102,16 @@
         }
     }
 
+    function searchUser() {
+        const query = document.getElementById('searchInput').value.trim();
+        if (query) window.location.href = `profile.html?user=${encodeURIComponent(query)}`;
+    }
+
     const user = JSON.parse(localStorage.getItem('user'));
     if (user) {
         const authPanel = document.getElementById('authPanel');
         if(authPanel) {
-            authPanel.innerHTML = `👤 <b>${user.username}</b> <button onclick="localStorage.removeItem('user'); location.reload();" style="background:#f85149; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; margin-left:8px;">Выйти</button>`;
+            authPanel.innerHTML = `👤 <a href="profile.html?user=${encodeURIComponent(user.username)}" style="color:var(--accent); text-decoration:none;"><b>${user.username}</b></a> <button onclick="localStorage.removeItem('user'); location.reload();" style="background:#f85149; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; margin-left:8px;">Выйти</button>`;
         }
     }
 </script>
