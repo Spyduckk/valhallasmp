@@ -10,7 +10,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Папка для картинок
+// Папка для загруженных картинок
 const uploadDir = path.join(__dirname, 'public', 'uploads');
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 const upload = multer({ dest: uploadDir });
@@ -66,7 +66,6 @@ app.post('/api/login', (req, res) => {
     }
 
     const db = readDB();
-    // Ищем пользователя по нику (регистронезависимо)
     const user = db.users.find(u => u.username.toLowerCase() === username.toLowerCase() && u.password === password);
     
     if (!user) {
