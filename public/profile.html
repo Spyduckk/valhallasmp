@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Профиль игрока - ValhallaSMP</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="container">
+    <div class="nav">
+        <div class="nav-tabs">
+            <a href="index.html" class="tab-btn">Главная</a>
+            <a href="gallery.html" class="tab-btn">Галерея</a>
+            <a href="rules.html" class="tab-btn">Правила</a>
+        </div>
+
+        <div style="display: flex; gap: 6px; align-items: center;">
+            <input type="text" id="searchInput" placeholder="Найти игрока..." style="margin:0; padding:5px 10px; width:130px; font-size:13px;">
+            <button onclick="searchUser()" class="btn" style="width:auto; padding:5px 10px; font-size:13px;">🔍</button>
+        </div>
+
+        <div class="auth-panel" id="authPanel">
+            <button class="login-btn" onclick="openAuthModal(true)">Войти</button>
+        </div>
+    </div>
+
+    <!-- Инфо профиля -->
+    <div class="form-group" style="text-align: center;">
+        <div style="font-size: 50px; margin-bottom: 10px;">👤</div>
+        <h2 id="profileUsername" style="color: var(--accent); margin: 0 0 5px 0;">Загрузка...</h2>
+        <p id="profileBio" style="color: var(--text-secondary); font-size: 14px; margin: 0 0 15px 0;"></p>
+        
+        <!-- Редактирование статуса (если это твой профиль) -->
+        <div id="editBioSection" style="display:none; margin-top: 10px;">
+            <input type="text" id="newBioInput" placeholder="Новый статус..." style="margin-bottom: 5px;">
+            <button onclick="updateBio()" class="btn" style="width: auto; padding: 6px 14px; font-size: 13px;">Изменить статус</button>
+        </div>
+
+        <div style="font-size: 13px; color: var(--text-secondary); margin-top: 10px;">
+            Опубликовано постов: <b id="profilePostsCount">0</b>
+        </div>
+    </div>
+
+    <h2>📸 Скриншоты игрока</h2>
+    <div id="userPostsFeed">Загрузка постов...</div>
+</div>
+
+<!-- Модалка авторизации -->
+<div id="authModal" class="modal">
+    <div class="modal-content">
+        <span class="close-modal" onclick="closeAuthModal()">&times;</span>
+        <h2 id="modalTitle" style="color: var(--accent); margin-top:0;">Вход</h2>
+        <input type="text" id="authLoginInput" placeholder="Юзернейм или Email">
+        <input type="password" id="authPassword" placeholder="Пароль">
+        <button class="btn" onclick="submitAuth()">Войти</button>
+    </div>
+</div>
+
+<script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const targetUser = urlParams.get('user');
+
+    function searchUser() {
+        const query = document.getElementById('searchInput').value.trim();
+        if (query) window.location.href = `profile.html?user=${encodeURIComponent(query)}`;
+    }
+
+    async function loadProfile() {
+        if (!targetUser) {
+            document.getElementById('profileUsername').innerText = "Игрок не указан";
+            return;
+        }
+
+        const res = await fetch(`/api/user/${encodeURIComponent(targetUser)}`);
+        if (!res.ok) {
+            document.getElementById('profileUsername').innerText = "Игрок не найден";
+            document.getElementById('userPostsFeed').innerHTML = "";
+            return;
+        }
+
+        const data = await res.json();
+        document.getElementById('profileUsername').innerText = data.username;
+        document.getElementById('profileBio').innerText = data.bio;
+        document.getElementById('profilePostsCount').innerText = data.postsCount;
+
+        // Если профиль принадлежит текущему юзеру — показываем форму редактирования статуса
+        const currentUser = JSON.parse(localStorage.getItem('user'));
+        if (currentUser && currentUser.username.toLowerCase() === data.username.toLowerCase()) {
+            document.getElementById('editBioSection').style.display = 'block';
+            document.getElementById('newBioInput').value = data.bio;
+        }
+
+        const feed = document.getElementById('userPostsFeed');
+        if (data.posts.length === 0) {
+            feed.innerHTML = "<p style='color:var(--text-secondary); text-align:center;'>У этого игрока пока нет скриншотов.</p>";
+            return;
+        }
+
+        feed.innerHTML = "";
+        data.posts.forEach(post => {
+            feed.innerHTML += `
+                <div style="background:var(--box-bg); border-radius:8px; padding:15px; margin-bottom:15px; border:1px solid var(--border);">
+                    <p style="margin:0 0 10px 0;">${post.caption || ''}</p>
+                    <img src="${post.imageUrl}" style="width:100%; border-radius:6px; max-height:400px; object-fit:cover;">
+                </div>
+            `;
+        });
+    }
+
+    async function updateBio() {
+        const currentUser = JSON.parse(localStorage.getItem('user'));
+        const newBio = document.getElementById('newBioInput').value;
+        const res = await fetch('/api/user/bio', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: currentUser.username, bio: newBio })
+        });
+        const data = await res.json();
+        if (data.success) {
+            alert("Статус обновлен!");
+            location.reload();
+        }
+    }
+
+    const currentUser = JSON.parse(localStorage.getItem('user'));
+    if (currentUser) {
+        document.getElementById('authPanel').innerHTML = `👤 <a href="profile.html?user=${encodeURIComponent(currentUser.username)}" style="color:var(--accent); text-decoration:none;"><b>${currentUser.username}</b></a> <button onclick="localStorage.removeItem('user'); location.reload();" style="background:#f85149; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; margin-left:8px;">Выйти</button>`;
+    }
+
+    loadProfile();
+</script>
+</body>
+</html>
