@@ -7,24 +7,28 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div class="container">
-    <div class="nav">
-        <div class="nav-tabs">
-            <a href="index.html" class="tab-btn">Главная</a>
-            <a href="gallery.html" class="tab-btn">Галерея</a>
-            <a href="rules.html" class="tab-btn">Правила</a>
-        </div>
 
-        <div style="display: flex; gap: 6px; align-items: center;">
-            <input type="text" id="searchInput" placeholder="Найти игрока..." style="margin:0; padding:5px 10px; width:130px; font-size:13px;" onkeydown="if(event.key === 'Enter') searchUser()">
-            <button onclick="searchUser()" class="btn" style="width:auto; padding:5px 10px; font-size:13px;">🔍</button>
-        </div>
-
+<!-- GitHub Header -->
+<header class="gh-header">
+    <div class="gh-nav-left">
+        <a href="index.html" class="gh-logo">🐙 ValhallaSMP <span class="gh-subpath">/ профиль</span></a>
+    </div>
+    <div class="gh-nav-right">
+        <input type="text" id="searchInput" placeholder="Type / to search" style="margin:0; padding:5px 10px; width:180px; font-size:13px;" onkeydown="if(event.key === 'Enter') searchUser()">
         <div class="auth-panel" id="authPanel">
-            <button class="login-btn" onclick="openAuthModal(true)">Войти</button>
+            <button class="login-btn" onclick="openAuthModal(true)">Sign in</button>
         </div>
     </div>
+</header>
 
+<!-- GitHub Sub-navigation -->
+<nav class="gh-subnav">
+    <a href="index.html" class="gh-tab">🏠 Главная</a>
+    <a href="gallery.html" class="gh-tab">📸 Галерея</a>
+    <a href="rules.html" class="gh-tab">📜 Правила</a>
+</nav>
+
+<div class="container">
     <!-- Инфо профиля -->
     <div class="form-group" style="text-align: center;">
         <div id="avatarContainer" style="margin-bottom: 10px;">
@@ -36,21 +40,27 @@
         <p id="profileRoleBadge" style="font-size: 12px; font-weight: bold; margin: 0 0 5px 0;"></p>
         <p id="profileBio" style="color: var(--text-secondary); font-size: 14px; margin: 0 0 15px 0;"></p>
         
+        <!-- Панель Администратора / Модератора (только для них) -->
         <div id="adminPanel" style="display:none; margin-bottom: 15px; background:var(--card-bg); padding:10px; border-radius:6px; border:1px solid var(--border);">
-            <p style="font-size: 12px; margin: 0 0 6px 0; color:var(--accent);">⚙️ Панель Администратора:</p>
-            <select id="roleSelect" style="margin-bottom: 6px; font-size: 12px; padding: 4px;">
-                <option value="user">Игрок</option>
-                <option value="moderator">Модератор</option>
-                <option value="admin">Администратор</option>
-            </select>
-            <button onclick="changeUserRole()" class="btn" style="width: auto; padding: 4px 10px; font-size: 12px;">Изменить роль</button>
+            <p style="font-size: 12px; margin: 0 0 6px 0; color:var(--accent);">⚙️ Управление пользователем:</p>
+            <div id="roleSelectWrapper" style="margin-bottom: 6px;">
+                <label style="font-size:11px; color:var(--text-secondary);">Роль:</label>
+                <select id="roleSelect" style="font-size: 12px; padding: 4px; margin-top:2px;">
+                    <option value="user">Игрок</option>
+                    <option value="moderator">Модератор</option>
+                    <option value="admin">Администратор</option>
+                </select>
+            </div>
+            <label style="font-size:11px; color:var(--text-secondary);">Статус / Био:</label>
+            <input type="text" id="adminBioInput" placeholder="Статус игрока..." style="margin-top:2px; margin-bottom: 6px; font-size:12px; padding:6px;">
+            <button onclick="adminUpdateUser()" class="btn" style="width: auto; padding: 4px 10px; font-size: 12px;">Сохранить изменения</button>
         </div>
 
-        <div id="editBioSection" style="display:none; margin-top: 15px; border-top: 1px solid var(--border); padding-top: 15px;">
-            <input type="text" id="newBioInput" placeholder="Новый статус..." style="margin-bottom: 8px;">
+        <!-- Настройки своей аватарки -->
+        <div id="editAvatarSection" style="display:none; margin-top: 15px; border-top: 1px solid var(--border); padding-top: 15px;">
             <label style="font-size: 13px; color: var(--text-secondary); display: block; text-align: left; margin-bottom: 4px;">Сменить аватарку:</label>
             <input type="file" id="newAvatarFile" accept="image/*" style="margin-bottom: 8px;">
-            <button onclick="updateProfile()" class="btn" style="width: auto; padding: 6px 14px; font-size: 13px;">Сохранить изменения</button>
+            <button onclick="updateAvatar()" class="btn" style="width: auto; padding: 6px 14px; font-size: 13px;">Загрузить аватарку</button>
         </div>
 
         <div style="font-size: 13px; color: var(--text-secondary); margin-top: 10px;">
@@ -108,8 +118,7 @@
             roleBadge.innerText = '⚔️ МОДЕРАТОР';
             roleBadge.style.color = '#34d399';
         } else {
-            roleBadge.innerText = '👤 Игрок';
-            roleBadge.style.color = 'var(--text-secondary)';
+            roleBadge.innerText = '';
         }
 
         if (data.avatarUrl) {
@@ -122,11 +131,18 @@
         const currentUser = JSON.parse(localStorage.getItem('user'));
         if (currentUser) {
             if (currentUser.username.toLowerCase() === data.username.toLowerCase()) {
-                document.getElementById('editBioSection').style.display = 'block';
-                document.getElementById('newBioInput').value = data.bio;
-            } else if (currentUser.role === 'admin') {
+                document.getElementById('editAvatarSection').style.display = 'block';
+            }
+            if (currentUser.role === 'admin' || currentUser.role === 'moderator') {
                 document.getElementById('adminPanel').style.display = 'block';
-                document.getElementById('roleSelect').value = data.role;
+                document.getElementById('adminBioInput').value = data.bio;
+                
+                // Только админ может менять роли
+                if (currentUser.role === 'admin') {
+                    document.getElementById('roleSelect').value = data.role;
+                } else {
+                    document.getElementById('roleSelectWrapper').style.display = 'none';
+                }
             }
         }
 
@@ -147,57 +163,44 @@
         });
     }
 
-    async function checkAuthUserPanel() {
-        const user = JSON.parse(localStorage.getItem('user'));
-        if (!user) return;
+    async function adminUpdateUser() {
+        const currentUser = JSON.parse(localStorage.getItem('user'));
+        const newRole = currentUser.role === 'admin' ? document.getElementById('roleSelect').value : undefined;
+        const newBio = document.getElementById('adminBioInput').value;
 
-        const res = await fetch(`/api/user/${encodeURIComponent(user.username)}`);
-        const userData = res.ok ? await res.json() : { notifications: [], role: 'user' };
-        
-        user.role = userData.role;
-        localStorage.setItem('user', JSON.stringify(user));
-
-        const unreadCount = userData.notifications ? userData.notifications.length : 0;
-        let notifHtml = '';
-        if (unreadCount > 0) {
-            userData.notifications.forEach(n => {
-                notifHtml += `<div class="notif-item">🔔 ${n.text} <span style="color:var(--text-secondary); font-size:10px;">(${n.time})</span></div>`;
-            });
-            notifHtml += `<button onclick="clearNotifications()" class="btn" style="margin-top:8px; padding:4px; font-size:11px;">Очистить</button>`;
-        } else {
-            notifHtml = `<div style="font-size:12px; color:var(--text-secondary); text-align:center;">Нет новых уведомлений</div>`;
-        }
-
-        let roleBadge = '';
-        if (user.role === 'admin') roleBadge = ' <span style="color:#f85149; font-size:11px;">[Админ]</span>';
-        else if (user.role === 'moderator') roleBadge = ' <span style="color:#34d399; font-size:11px;">[Модер]</span>';
-
-        const authPanel = document.getElementById('authPanel');
-        if(authPanel) {
-            authPanel.innerHTML = `
-                <div style="position:relative; display:inline-block; margin-right: 10px;">
-                    <span onclick="toggleNotifMenu()" style="cursor:pointer; font-size:16px;" title="Уведомления">🔔<span id="notifBadge" style="background:#f85149; color:white; border-radius:50%; padding:1px 5px; font-size:10px; position:absolute; top:-5px; right:-10px; display:${unreadCount>0?'inline':'none'}">${unreadCount}</span></span>
-                    <div id="notifDropdown" class="notif-dropdown">${notifHtml}</div>
-                </div>
-                👤 <a href="profile.html?user=${encodeURIComponent(user.username)}" style="color:var(--accent); text-decoration:none;"><b>${user.username}</b></a>${roleBadge} 
-                <button onclick="localStorage.removeItem('user'); location.reload();" style="background:#f85149; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; margin-left:8px;">Выйти</button>
-            `;
-        }
-    }
-
-    function toggleNotifMenu() {
-        const drop = document.getElementById('notifDropdown');
-        drop.style.display = drop.style.display === 'block' ? 'none' : 'block';
-    }
-
-    async function clearNotifications() {
-        const user = JSON.parse(localStorage.getItem('user'));
-        await fetch('/api/user/notifications/clear', {
+        const res = await fetch('/api/admin/update-user', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: user.username })
+            body: JSON.stringify({ adminUsername: currentUser.username, targetUsername: targetUser, newRole, newBio })
         });
-        location.reload();
+        const data = await res.json();
+        if (data.success) {
+            alert("Данные обновлены!");
+            location.reload();
+        } else {
+            alert(data.error);
+        }
+    }
+
+    async function updateAvatar() {
+        const currentUser = JSON.parse(localStorage.getItem('user'));
+        const avatarFile = document.getElementById('newAvatarFile').files[0];
+        if (!avatarFile) return alert("Выберите файл аватара!");
+
+        const formData = new FormData();
+        formData.append('username', currentUser.username);
+        formData.append('avatar', avatarFile);
+
+        const res = await fetch('/api/user/update-avatar', { method: 'POST', body: formData });
+        const data = await res.json();
+        if (data.success) {
+            currentUser.avatarUrl = data.avatarUrl;
+            localStorage.setItem('user', JSON.stringify(currentUser));
+            alert("Аватарка обновлена!");
+            location.reload();
+        } else {
+            alert("Ошибка загрузки");
+        }
     }
 
     async function submitAuth() {
@@ -218,41 +221,58 @@
         }
     }
 
-    async function changeUserRole() {
-        const currentUser = JSON.parse(localStorage.getItem('user'));
-        const newRole = document.getElementById('roleSelect').value;
-        const res = await fetch('/api/admin/set-role', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ adminUsername: currentUser.username, targetUsername: targetUser, newRole })
-        });
-        const data = await res.json();
-        if (data.success) {
-            alert("Роль успешно изменена!");
-            location.reload();
+    async function checkAuthUserPanel() {
+        const user = JSON.parse(localStorage.getItem('user'));
+        if (!user) return;
+
+        const res = await fetch(`/api/user/${encodeURIComponent(user.username)}`);
+        const userData = res.ok ? await res.json() : { notifications: [], role: 'user', avatarUrl: '' };
+        
+        user.role = userData.role;
+        user.avatarUrl = userData.avatarUrl;
+        localStorage.setItem('user', JSON.stringify(user));
+
+        const unreadCount = userData.notifications ? userData.notifications.length : 0;
+        let notifHtml = '';
+        if (unreadCount > 0) {
+            userData.notifications.forEach(n => {
+                notifHtml += `<div class="notif-item">🔔 ${n.text} <span style="color:var(--text-secondary); font-size:10px;">(${n.time})</span></div>`;
+            });
+            notifHtml += `<button onclick="clearNotifications()" class="btn" style="margin-top:8px; padding:4px; font-size:11px;">Очистить</button>`;
         } else {
-            alert(data.error);
+            notifHtml = `<div style="font-size:12px; color:var(--text-secondary); text-align:center;">Нет новых уведомлений</div>`;
+        }
+
+        let avatarHtml = userData.avatarUrl 
+            ? `<img src="${userData.avatarUrl}" style="width:30px; height:30px; border-radius:50%; object-fit:cover; border:1px solid var(--accent); vertical-align:middle;">`
+            : `<span style="font-size:20px; vertical-align:middle;">👤</span>`;
+
+        const authPanel = document.getElementById('authPanel');
+        if(authPanel) {
+            authPanel.innerHTML = `
+                <div style="position:relative; display:inline-block; margin-right: 8px;">
+                    <span onclick="toggleNotifMenu()" style="cursor:pointer; font-size:16px;" title="Уведомления">🔔<span id="notifBadge" style="background:#f85149; color:white; border-radius:50%; padding:1px 5px; font-size:10px; position:absolute; top:-5px; right:-10px; display:${unreadCount>0?'inline':'none'}">${unreadCount}</span></span>
+                    <div id="notifDropdown" class="notif-dropdown">${notifHtml}</div>
+                </div>
+                <a href="profile.html?user=${encodeURIComponent(user.username)}" style="text-decoration:none;" title="Профиль">${avatarHtml}</a>
+                <button onclick="localStorage.removeItem('user'); location.reload();" style="background:#f85149; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; margin-left:8px; font-size:12px;">Выйти</button>
+            `;
         }
     }
 
-    async function updateProfile() {
-        const currentUser = JSON.parse(localStorage.getItem('user'));
-        const newBio = document.getElementById('newBioInput').value;
-        const avatarFile = document.getElementById('newAvatarFile').files[0];
+    function toggleNotifMenu() {
+        const drop = document.getElementById('notifDropdown');
+        drop.style.display = drop.style.display === 'block' ? 'none' : 'block';
+    }
 
-        const formData = new FormData();
-        formData.append('username', currentUser.username);
-        formData.append('bio', newBio);
-        if (avatarFile) formData.append('avatar', avatarFile);
-
-        const res = await fetch('/api/user/update', { method: 'POST', body: formData });
-        const data = await res.json();
-        if (data.success) {
-            alert("Профиль успешно обновлен!");
-            location.reload();
-        } else {
-            alert("Ошибка обновления");
-        }
+    async function clearNotifications() {
+        const user = JSON.parse(localStorage.getItem('user'));
+        await fetch('/api/user/notifications/clear', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: user.username })
+        });
+        location.reload();
     }
 
     checkAuthUserPanel();
