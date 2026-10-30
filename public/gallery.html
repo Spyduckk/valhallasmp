@@ -175,6 +175,21 @@
         }
     }
 
+    async function deletePost(postId) {
+        if (!confirm("Удалить эту фотографию?")) return;
+        const res = await fetch(`/api/posts/${postId}`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: user.username })
+        });
+        const data = await res.json();
+        if (data.success) {
+            loadPosts();
+        } else {
+            alert(data.error);
+        }
+    }
+
     async function toggleLike(postId, author) {
         if (!user) return openAuthModal(true);
         if (author === user.username) showToast();
@@ -234,11 +249,8 @@
             body: JSON.stringify({ username: user.username, isReply, parentId })
         });
         const data = await res.json();
-        if (data.success) {
-            loadPosts();
-        } else {
-            alert(data.error);
-        }
+        if (data.success) loadPosts();
+        else alert(data.error);
     }
 
     async function loadPosts() {
@@ -256,6 +268,8 @@
             const likesCount = post.likes ? post.likes.length : 0;
             const isLiked = user && post.likes && post.likes.includes(user.username);
             const likeColor = isLiked ? '#f85149' : 'var(--text-secondary)';
+
+            let deletePostBtn = (user && user.username === post.author) ? `<button onclick="deletePost(${post.id})" style="background:none; border:none; color:var(--danger); cursor:pointer; font-size:13px; font-weight:600; float:right;">🗑️ Удалить фото</button>` : '';
 
             let commentsHtml = '';
             if (post.comments) {
@@ -292,7 +306,10 @@
 
             feed.innerHTML += `
                 <div style="background:var(--box-bg); border-radius:8px; padding:15px; margin-bottom:20px; border:1px solid var(--border);">
-                    <p style="margin:0 0 5px 0; font-size:13px;"><b>Автор:</b> <a href="profile.html?user=${encodeURIComponent(post.author)}" style="color:var(--accent); text-decoration:none;">${post.author}</a></p>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 5px;">
+                        <p style="margin:0; font-size:13px;"><b>Автор:</b> <a href="profile.html?user=${encodeURIComponent(post.author)}" style="color:var(--accent); text-decoration:none;">${post.author}</a></p>
+                        ${deletePostBtn}
+                    </div>
                     <p style="margin:0 0 10px 0;">${post.caption || ''}</p>
                     <img src="${post.imageUrl}" style="width:100%; border-radius:6px; max-height:400px; object-fit:cover;">
                     
