@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ValhallaSMP 26.2 - Галерея</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="container">
+    <div class="nav">
+        <div class="nav-tabs">
+            <a href="index.html" class="tab-btn">Главная</a>
+            <a href="gallery.html" class="tab-btn active">Галерея</a>
+        </div>
+        <div class="auth-panel" id="authPanel">
+            <button class="login-btn" onclick="openAuthModal(true)">Войти / Регистрация</button>
+        </div>
+    </div>
+
+    <h2>📸 Галерея сервера</h2>
+
+    <div id="uploadSection" style="display:none;" class="form-group">
+        <h3>Загрузить скриншот</h3>
+        <input type="file" id="imageFile" accept="image/*">
+        <textarea id="imageCaption" placeholder="Подпись к фото..." rows="2"></textarea>
+        <button class="btn" onclick="uploadPost()">Опубликовать</button>
+    </div>
+    <p id="loginPrompt" style="color: var(--text-secondary);">Войдите в аккаунт, чтобы загружать скриншоты.</p>
+
+    <div id="postsFeed" style="margin-top: 20px;">Загрузка постов...</div>
+</div>
+
+<!-- Модалка авторизации -->
+<div id="authModal" class="modal">
+    <div class="modal-content">
+        <span class="close-modal" onclick="closeAuthModal()">&times;</span>
+        <h2 id="modalTitle" style="color: var(--accent); margin-top:0;">Вход</h2>
+        <div id="usernameField" style="display: none;"><input type="text" id="authUsername" placeholder="Юзернейм (мин. 5 символов)"></div>
+        <input type="email" id="authEmail" placeholder="Email">
+        <input type="password" id="authPassword" placeholder="Пароль">
+        <button class="btn" id="modalActionBtn" onclick="submitAuth()">Войти</button>
+        <div id="modalSwitchText" style="margin-top:15px; text-align:center; font-size:14px; color:var(--text-secondary); cursor:pointer;">
+            Нет аккаунта? <span onclick="toggleAuthMode()" style="color:var(--accent);">Зарегистрироваться</span>
+        </div>
+    </div>
+</div>
+
+<script>
+    let isLoginMode = true;
+    function openAuthModal(login) { isLoginMode = login; document.getElementById('authModal').style.display = 'flex'; updateUI(); }
+    function closeAuthModal() { document.getElementById('authModal').style.display = 'none'; }
+    function toggleAuthMode() { isLoginMode = !isLoginMode; updateUI(); }
+    function updateUI() {
+        document.getElementById('modalTitle').innerText = isLoginMode ? "Вход" : "Регистрация";
+        document.getElementById('modalActionBtn').innerText = isLoginMode ? "Войти" : "Зарегистрироваться";
+        document.getElementById('usernameField').style.display = isLoginMode ? "none" : "block";
+        document.getElementById('modalSwitchText').innerHTML = isLoginMode ? 'Нет аккаунта? <span onclick="toggleAuthMode()" style="color:var(--accent);">Зарегистрироваться</span>' : 'Уже есть аккаунт? <span onclick="toggleAuthMode()" style="color:var(--accent);">Войти</span>';
+    }
+
+    async function submitAuth() {
+        const email = document.getElementById('authEmail').value;
+        const password = document.getElementById('authPassword').value;
+        const username = document.getElementById('authUsername').value;
+
+        const url = isLoginMode ? '/api/login' : '/api/register';
+        const body = isLoginMode ? { email, password } : { username, email, password };
+
+        if (!isLoginMode && username.length < 5) return alert("Юзернейм должен быть не менее 5 символов!");
+
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (data.success) {
+            localStorage.setItem('user', JSON.stringify(data));
+            alert("Успешно!");
+            location.reload();
+        } else {
+            alert(data.error);
+        }
+    }
+
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (user) {
+        document.getElementById('authPanel').innerHTML = `👤 <b>${user.username}</b> <button onclick="localStorage.removeItem('user'); location.reload();" style="background:#f43f5e; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;">Выйти</button>`;
+        document.getElementById('uploadSection').style.display = 'block';
+        document.getElementById('loginPrompt').style.display = 'none';
+    }
+
+    async function uploadPost() {
+        const fileInput = document.getElementById('imageFile');
+        const caption = document.getElementById('imageCaption').value;
+        if (!fileInput.files[0]) return alert("Выберите картинку!");
+
+        const formData = new FormData();
+        formData.append('image', fileInput.files[0]);
+        formData.append('caption', caption);
+        formData.append('username', user.username);
+
+        alert("Загрузка...");
+        const res = await fetch('/api/posts', { method: 'POST', body: formData });
+        const data = await res.json();
+        if (data.success) {
+            alert("Пост опубликован!");
+            fileInput.value = '';
+            document.getElementById('imageCaption').value = '';
+            loadPosts();
+        } else {
+            alert(data.error);
+        }
+    }
+
+    async function loadPosts() {
+        const feed = document.getElementById('postsFeed');
+        const res = await fetch('/api/posts');
+        const posts = await res.json();
+        
+        if (posts.length === 0) {
+            feed.innerHTML = "<p style='color:var(--text-secondary); text-align:center;'>Пока нет скриншотов. Будь первым!</p>";
+            return;
+        }
+
+        feed.innerHTML = "";
+        posts.forEach(post => {
+            feed.innerHTML += `
+                <div style="background:var(--box-bg); border-radius:12px; padding:15px; margin-bottom:15px; border:1px solid #374151;">
+                    <p style="margin:0 0 5px 0; color:var(--accent); font-size:13px;"><b>${post.author}</b></p>
+                    <p style="margin:0 0 10px 0;">${post.caption || ''}</p>
+                    <img src="${post.imageUrl}" style="width:100%; border-radius:8px; max-height:400px; object-fit:cover;">
+                </div>
+            `;
+        });
+    }
+
+    loadPosts();
+</script>
+</body>
+</html>
