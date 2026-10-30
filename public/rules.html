@@ -8,20 +8,18 @@
 </head>
 <body>
 
-<!-- GitHub Header -->
 <header class="gh-header">
     <div class="gh-nav-left">
-        <a href="index.html" class="gh-logo">🐙 ValhallaSMP <span class="gh-subpath">/ правила</span></a>
+        <a href="index.html" class="gh-logo">☃️ ValhallaSMP <span class="gh-subpath">/ правила</span></a>
     </div>
     <div class="gh-nav-right">
-        <input type="text" id="searchInput" placeholder="Type / to search" style="margin:0; padding:5px 10px; width:180px; font-size:13px;" onkeydown="if(event.key === 'Enter') searchUser()">
+        <input type="text" id="searchInput" placeholder="Type / to search" style="margin:0; padding:5px 10px; width:180px; font-size:13px;" onkeydown="if(event.key === 'Enter') searchSite()">
         <div class="auth-panel" id="authPanel">
             <button class="login-btn" onclick="openAuthModal(true)">Sign in</button>
         </div>
     </div>
 </header>
 
-<!-- GitHub Sub-navigation -->
 <nav class="gh-subnav">
     <a href="index.html" class="gh-tab">🏠 Главная</a>
     <a href="gallery.html" class="gh-tab">📸 Галерея</a>
@@ -51,7 +49,6 @@
     </div>
 </div>
 
-<!-- Модалка авторизации -->
 <div id="authModal" class="modal">
     <div class="modal-content" onkeydown="if(event.key === 'Enter') submitAuth()">
         <span class="close-modal" onclick="closeAuthModal()">&times;</span>
@@ -102,9 +99,9 @@
         }
     }
 
-    function searchUser() {
+    function searchSite() {
         const query = document.getElementById('searchInput').value.trim();
-        if (query) window.location.href = `profile.html?user=${encodeURIComponent(query)}`;
+        if (query) window.location.href = `search.html?q=${encodeURIComponent(query)}`;
     }
 
     async function checkAuthUserPanel() {
