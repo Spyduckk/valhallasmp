@@ -10,6 +10,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Папки для файлов
 const uploadDir = path.join(__dirname, 'public', 'uploads');
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
@@ -19,9 +20,14 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
+// Надежное хранение базы без сброса
 const dbFile = path.join(__dirname, 'database.json');
 function readDB() {
-    if (!fs.existsSync(dbFile)) return { users: [], posts: [] };
+    if (!fs.existsSync(dbFile)) {
+        const initial = { users: [], posts: [] };
+        fs.writeFileSync(dbFile, JSON.stringify(initial, null, 2));
+        return initial;
+    }
     try {
         const data = JSON.parse(fs.readFileSync(dbFile, 'utf8'));
         if (!data.users) data.users = [];
@@ -45,13 +51,7 @@ app.post('/api/register', (req, res) => {
     if (db.users.find(u => u.email === email)) return res.status(400).json({ error: 'Email уже занят!' });
     if (db.users.find(u => u.username.toLowerCase() === username.toLowerCase())) return res.status(400).json({ error: 'Юзернейм уже занят!' });
 
-    db.users.push({ 
-        username, 
-        email, 
-        password, 
-        bio: 'Игрок сервера ValhallaSMP 26.2',
-        createdAt: Date.now() 
-    });
+    db.users.push({ username, email, password, bio: 'Игрок сервера ValhallaSMP 26.2' });
     writeDB(db);
     res.json({ success: true, username, email });
 });
@@ -86,10 +86,28 @@ app.post('/api/posts', upload.single('image'), (req, res) => {
         caption: caption || '',
         author: username || 'Аноним',
         likes: [],
-        comments: [] // структура: { id, author, text, replies: [{ id, author, text }] }
+        comments: []
     };
 
     db.posts.push(newPost);
+    writeDB(db);
+    res.json({ success: true });
+});
+
+// Удалить СВОЙ пост (фотографию)
+app.delete('/api/posts/:id', (req, res) => {
+    const postId = Number(req.params.id);
+    const { username } = req.body;
+
+    const db = readDB();
+    const postIndex = db.posts.findIndex(p => p.id === postId);
+    if (postIndex === -1) return res.status(404).json({ error: 'Пост не найден' });
+
+    if (db.posts[postIndex].author !== username) {
+        return res.status(403).json({ error: 'Можно удалять только свои фотографии!' });
+    }
+
+    db.posts.splice(postIndex, 1);
     writeDB(db);
     res.json({ success: true });
 });
@@ -111,7 +129,7 @@ app.post('/api/posts/:id/like', (req, res) => {
     res.json({ success: true, likes: post.likes });
 });
 
-// Добавить комментарий
+// Комментарии
 app.post('/api/posts/:id/comment', (req, res) => {
     const postId = Number(req.params.id);
     const { username, text } = req.body;
@@ -122,18 +140,13 @@ app.post('/api/posts/:id/comment', (req, res) => {
     if (!post) return res.status(404).json({ error: 'Пост не найден' });
 
     if (!post.comments) post.comments = [];
-    post.comments.push({
-        id: Date.now(),
-        author: username,
-        text: text.trim(),
-        replies: []
-    });
+    post.comments.push({ id: Date.now(), author: username, text: text.trim(), replies: [] });
 
     writeDB(db);
     res.json({ success: true, comments: post.comments });
 });
 
-// Ответить на комментарий
+// Ответы на комментарии
 app.post('/api/posts/:postId/comment/:commentId/reply', (req, res) => {
     const postId = Number(req.params.postId);
     const commentId = Number(req.params.commentId);
@@ -148,17 +161,13 @@ app.post('/api/posts/:postId/comment/:commentId/reply', (req, res) => {
     if (!comment) return res.status(404).json({ error: 'Комментарий не найден' });
 
     if (!comment.replies) comment.replies = [];
-    comment.replies.push({
-        id: Date.now(),
-        author: username,
-        text: text.trim()
-    });
+    comment.replies.push({ id: Date.now(), author: username, text: text.trim() });
 
     writeDB(db);
     res.json({ success: true });
 });
 
-// Удалить комментарий или ответ (только свой!)
+// Удаление комментария/ответа
 app.delete('/api/posts/:postId/comment/:commentId', (req, res) => {
     const postId = Number(req.params.postId);
     const commentId = Number(req.params.commentId);
@@ -188,16 +197,14 @@ app.delete('/api/posts/:postId/comment/:commentId', (req, res) => {
     res.json({ success: true });
 });
 
-// Получить данные профиля игрока
+// Профиль игрока (поиск)
 app.get('/api/user/:username', (req, res) => {
-    const username = req.params.username;
+    const searchName = req.params.username.toLowerCase();
     const db = readDB();
-    const user = db.users.find(u => u.username.toLowerCase() === username.toLowerCase());
+    const user = db.users.find(u => u.username.toLowerCase() === searchName);
     if (!user) return res.status(404).json({ error: 'Пользователь не найден' });
 
-    // Находим все посты этого пользователя
-    const userPosts = db.posts.filter(p => p.author.toLowerCase() === username.toLowerCase());
-
+    const userPosts = db.posts.filter(p => p.author.toLowerCase() === searchName);
     res.json({
         username: user.username,
         bio: user.bio || 'Игрок сервера',
@@ -206,7 +213,6 @@ app.get('/api/user/:username', (req, res) => {
     });
 });
 
-// Обновить био профиля
 app.post('/api/user/bio', (req, res) => {
     const { username, bio } = req.body;
     const db = readDB();
@@ -218,8 +224,6 @@ app.post('/api/user/bio', (req, res) => {
     res.json({ success: true, bio });
 });
 
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
 app.listen(PORT, () => console.log(`Сервер запущен на порту ${PORT}`));
