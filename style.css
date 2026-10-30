@@ -44,13 +44,9 @@ body {
     text-decoration: none;
     transition: 0.2s;
 }
-.tab-btn.active, .tab-btn:hover {
-    background: var(--accent);
-    color: #000;
-}
-.auth-panel { font-size: 14px; }
-.auth-panel button, .login-btn {
-    background: #f43f5e;
+.tab-btn.active, .tab-btn:hover { background: var(--accent); color: #000; }
+.login-btn {
+    background: #3b82f6;
     color: white;
     border: none;
     padding: 6px 14px;
@@ -58,7 +54,6 @@ body {
     cursor: pointer;
     font-weight: bold;
 }
-.login-btn { background: #3b82f6; }
 .login-btn:hover { background: #2563eb; }
 
 header { text-align: center; margin-bottom: 25px; }
@@ -71,7 +66,6 @@ h1 { color: var(--accent); margin: 0 0 5px 0; font-size: 32px; }
     border-radius: 12px;
     text-align: center;
     cursor: pointer;
-    transition: 0.2s;
     border: 1px solid #3b82f6;
     margin-bottom: 25px;
 }
@@ -117,7 +111,7 @@ h1 { color: var(--accent); margin: 0 0 5px 0; font-size: 32px; }
 }
 .btn:hover { background: #059669; color: white; }
 
-/* МОДАЛЬНОЕ ОКНО АВТОРИЗАЦИИ */
+/* Модальное окно */
 .modal {
     display: none;
     position: fixed;
@@ -144,11 +138,3 @@ h1 { color: var(--accent); margin: 0 0 5px 0; font-size: 32px; }
     color: var(--text-secondary);
 }
 .close-modal:hover { color: white; }
-.auth-switch {
-    text-align: center;
-    margin-top: 15px;
-    font-size: 14px;
-    color: var(--text-secondary);
-    cursor: pointer;
-}
-.auth-switch span { color: var(--accent); text-decoration: underline; }
