@@ -7,6 +7,7 @@
     --accent-hover: #79c0ff;
     --text: #c9d1d9;
     --text-secondary: #8b949e;
+    --danger: #f85149;
 }
 
 body {
@@ -133,6 +134,68 @@ input:focus, textarea:focus { outline: none; border-color: var(--accent); box-sh
     transition: 0.2s;
 }
 .btn:hover { background: var(--accent-hover); }
+
+/* Прогресс-бар загрузки */
+.progress-container {
+    display: none;
+    margin-bottom: 15px;
+}
+.progress-bar-bg {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    height: 16px;
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+.progress-bar-fill {
+    background: var(--accent);
+    height: 100%;
+    width: 0%;
+    transition: width 0.1s linear;
+}
+.progress-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+.cancel-btn {
+    background: var(--danger);
+    color: white;
+    border: none;
+    padding: 4px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+/* Всплывающее уведомление снизу */
+#toast {
+    visibility: hidden;
+    min-width: 250px;
+    background-color: #21262d;
+    color: #58a6ff;
+    text-align: center;
+    border-radius: 8px;
+    padding: 14px;
+    position: fixed;
+    z-index: 1000;
+    left: 50%;
+    bottom: 30px;
+    transform: translateX(-50%);
+    border: 1px solid var(--accent);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+    font-weight: 600;
+    font-size: 14px;
+}
+#toast.show {
+    visibility: visible;
+    animation: fadein 0.3s, fadeout 0.3s 2.5s;
+}
+@keyframes fadein { from { bottom: 0; opacity: 0; } to { bottom: 30px; opacity: 1; } }
+@keyframes fadeout { from { bottom: 30px; opacity: 1; } to { bottom: 0; opacity: 0; } }
 
 .modal {
     display: none;
