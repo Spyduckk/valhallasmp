@@ -24,8 +24,8 @@
         <p class="subtitle">Обязательны к прочтению для всех игроков</p>
     </header>
 
-    <div class="rules" style="margin-bottom: 20px;">
-        <h2 style="color: #60a5fa; margin-top:0;">1. Общие положения</h2>
+    <div class="rules">
+        <h2>1. Общие положения</h2>
         <ul>
             <li><b>1.1</b> Администрация имеет право действовать на своё усмотрение.</li>
             <li><b>1.2</b> Все игроки обязаны соблюдать данные правила.</li>
@@ -34,8 +34,8 @@
         </ul>
     </div>
 
-    <div class="rules" style="margin-bottom: 20px;">
-        <h2 style="color: #f43f5e; margin-top:0;">2. Правила общения</h2>
+    <div class="rules">
+        <h2>2. Правила общения</h2>
         <ul>
             <li><b>2.1</b> Запрещен спам, флуд.</li>
             <li><b>2.2</b> Запрещена реклама без ведома администрации.</li>
@@ -44,7 +44,7 @@
     </div>
 
     <div class="rules">
-        <h2 style="color: #34d399; margin-top:0;">3. Игровой процесс</h2>
+        <h2>3. Игровой процесс</h2>
         <ul>
             <li><b>3.1</b> Гриферство запрещено.</li>
             <li><b>3.2</b> Запрещено мешать работе сервера (строить лаг-машины и т. д.).</li>
@@ -57,10 +57,13 @@
     <div class="modal-content">
         <span class="close-modal" onclick="closeAuthModal()">&times;</span>
         <h2 id="modalTitle" style="color: var(--accent); margin-top:0;">Вход</h2>
-        <div id="usernameField" style="display: none;"><input type="text" id="authUsername" placeholder="Юзернейм (мин. 5 символов)"></div>
-        <input type="email" id="authEmail" placeholder="Email">
+        
+        <input type="text" id="authUsername" placeholder="Юзернейм (мин. 5 символов)">
+        <div id="emailField"><input type="email" id="authEmail" placeholder="Email"></div>
         <input type="password" id="authPassword" placeholder="Пароль">
+        
         <button class="btn" id="modalActionBtn" onclick="submitAuth()">Войти</button>
+        
         <div id="modalSwitchText" style="margin-top:15px; text-align:center; font-size:14px; color:var(--text-secondary); cursor:pointer;">
             Нет аккаунта? <span onclick="toggleAuthMode()" style="color:var(--accent);">Зарегистрироваться</span>
         </div>
@@ -72,22 +75,23 @@
     function openAuthModal(login) { isLoginMode = login; document.getElementById('authModal').style.display = 'flex'; updateUI(); }
     function closeAuthModal() { document.getElementById('authModal').style.display = 'none'; }
     function toggleAuthMode() { isLoginMode = !isLoginMode; updateUI(); }
+    
     function updateUI() {
         document.getElementById('modalTitle').innerText = isLoginMode ? "Вход" : "Регистрация";
         document.getElementById('modalActionBtn').innerText = isLoginMode ? "Войти" : "Зарегистрироваться";
-        document.getElementById('usernameField').style.display = isLoginMode ? "none" : "block";
+        document.getElementById('emailField').style.display = isLoginMode ? "none" : "block";
         document.getElementById('modalSwitchText').innerHTML = isLoginMode ? 'Нет аккаунта? <span onclick="toggleAuthMode()" style="color:var(--accent);">Зарегистрироваться</span>' : 'Уже есть аккаунт? <span onclick="toggleAuthMode()" style="color:var(--accent);">Войти</span>';
     }
 
     async function submitAuth() {
-        const email = document.getElementById('authEmail').value;
-        const password = document.getElementById('authPassword').value;
         const username = document.getElementById('authUsername').value;
-
-        const url = isLoginMode ? '/api/login' : '/api/register';
-        const body = isLoginMode ? { email, password } : { username, email, password };
+        const password = document.getElementById('authPassword').value;
+        const email = document.getElementById('emailField').style.display !== 'none' ? document.getElementById('authEmail').value : '';
 
         if (!isLoginMode && username.length < 5) return alert("Юзернейм должен быть не менее 5 символов!");
+
+        const url = isLoginMode ? '/api/login' : '/api/register';
+        const body = isLoginMode ? { username, password } : { username, email, password };
 
         const res = await fetch(url, {
             method: 'POST',
@@ -106,7 +110,10 @@
 
     const user = JSON.parse(localStorage.getItem('user'));
     if (user) {
-        document.getElementById('authPanel').innerHTML = `👤 <b>${user.username}</b> <button onclick="localStorage.removeItem('user'); location.reload();" style="background:#f43f5e; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;">Выйти</button>`;
+        const authPanel = document.getElementById('authPanel');
+        if(authPanel) {
+            authPanel.innerHTML = `👤 <b>${user.username}</b> <button onclick="localStorage.removeItem('user'); location.reload();" style="background:#f85149; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; margin-left:8px;">Выйти</button>`;
+        }
     }
 </script>
 </body>
