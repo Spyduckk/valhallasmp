@@ -30,7 +30,7 @@ function writeDB(data) {
     fs.writeFileSync(dbFile, JSON.stringify(data, null, 2));
 }
 
-// Регистрация с проверкой уникальности почты И юзернейма
+// Регистрация
 app.post('/api/register', (req, res) => {
     const { username, email, password } = req.body;
     
@@ -43,12 +43,10 @@ app.post('/api/register', (req, res) => {
 
     const db = readDB();
 
-    // Проверяем, занят ли email
     if (db.users.find(u => u.email === email)) {
         return res.status(400).json({ error: 'Этот Email уже зарегистрирован!' });
     }
 
-    // Проверяем, занят ли юзернейм (чтобы не было дубликатов)
     if (db.users.find(u => u.username.toLowerCase() === username.toLowerCase())) {
         return res.status(400).json({ error: 'Этот юзернейм уже занят другим игроком!' });
     }
@@ -59,19 +57,20 @@ app.post('/api/register', (req, res) => {
     res.json({ success: true, username, email });
 });
 
-// Вход в аккаунт
+// Вход по ЮЗЕРНЕЙМУ и паролю
 app.post('/api/login', (req, res) => {
-    const { email, password } = req.body;
+    const { username, password } = req.body;
     
-    if (!email || !password) {
+    if (!username || !password) {
         return res.status(400).json({ error: 'Заполни все поля!' });
     }
 
     const db = readDB();
-    const user = db.users.find(u => u.email === email && u.password === password);
+    // Ищем пользователя по нику (регистронезависимо)
+    const user = db.users.find(u => u.username.toLowerCase() === username.toLowerCase() && u.password === password);
     
     if (!user) {
-        return res.status(400).json({ error: 'Неверный email или пароль.' });
+        return res.status(400).json({ error: 'Неверный юзернейм или пароль.' });
     }
 
     res.json({ success: true, username: user.username, email: user.email });
