@@ -48,6 +48,26 @@
     </section>
 </div>
 
+<!-- МОДАЛЬНОЕ ОКНО АВТОРИЗАЦИИ -->
+<div id="authModal" class="modal">
+    <div class="modal-content">
+        <span class="close-modal" onclick="closeAuthModal()">&times;</span>
+        <h2 id="modalTitle" style="margin-top: 0; color: var(--accent);">Вход</h2>
+        
+        <div id="usernameField" style="display: none;">
+            <input type="text" id="authUsername" placeholder="Юзернейм (мин. 5 символов)">
+        </div>
+        <input type="email" id="authEmail" placeholder="Email">
+        <input type="password" id="authPassword" placeholder="Пароль">
+        
+        <button class="btn" id="modalActionBtn" onclick="submitAuth()">Войти</button>
+        
+        <div class="auth-switch" id="modalSwitchText">
+            Нет аккаунта? <span onclick="toggleAuthMode()">Зарегистрироваться</span>
+        </div>
+    </div>
+</div>
+
 <script type="module" src="auth.js"></script>
 </body>
 </html>
