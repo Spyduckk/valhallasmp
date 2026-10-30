@@ -39,7 +39,6 @@ function writeDB(data) {
     fs.writeFileSync(dbFile, JSON.stringify(data, null, 2));
 }
 
-// Уведомления
 function addNotification(db, username, text) {
     const user = db.users.find(u => u.username.toLowerCase() === username.toLowerCase());
     if (user) {
@@ -48,7 +47,7 @@ function addNotification(db, username, text) {
     }
 }
 
-// Регистрация
+// Регистрация (первый зарегистрированный пользователь автоматически становится 'admin')
 app.post('/api/register', (req, res) => {
     const { username, email, password } = req.body;
     if (!username || username.length < 5) return res.status(400).json({ error: 'Юзернейм от 5 символов!' });
@@ -58,16 +57,19 @@ app.post('/api/register', (req, res) => {
     if (db.users.find(u => u.email === email)) return res.status(400).json({ error: 'Email уже занят!' });
     if (db.users.find(u => u.username.toLowerCase() === username.toLowerCase())) return res.status(400).json({ error: 'Юзернейм уже занят!' });
 
+    const role = db.users.length === 0 ? 'admin' : 'user';
+
     db.users.push({ 
         username, 
         email, 
         password, 
+        role, // 'user', 'moderator', 'admin'
         bio: 'Игрок сервера ValhallaSMP 26.2', 
         avatarUrl: '',
         notifications: []
     });
     writeDB(db);
-    res.json({ success: true, username, email });
+    res.json({ success: true, username, email, role });
 });
 
 // Вход
@@ -79,7 +81,7 @@ app.post('/api/login', (req, res) => {
     const user = db.users.find(u => (u.username.toLowerCase() === login.toLowerCase() || u.email.toLowerCase() === login.toLowerCase()) && u.password === password);
     
     if (!user) return res.status(400).json({ error: 'Неверный логин или пароль.' });
-    res.json({ success: true, username: user.username, email: user.email });
+    res.json({ success: true, username: user.username, email: user.email, role: user.role || 'user' });
 });
 
 // Получить посты
@@ -88,7 +90,7 @@ app.get('/api/posts', (req, res) => {
     res.json(db.posts.reverse());
 });
 
-// Загрузить пост с категорий
+// Загрузить пост
 app.post('/api/posts', upload.single('image'), (req, res) => {
     const { caption, username, category } = req.body;
     if (!req.file) return res.status(400).json({ error: 'Картинка не загружена' });
@@ -109,22 +111,29 @@ app.post('/api/posts', upload.single('image'), (req, res) => {
     res.json({ success: true });
 });
 
-// Удалить пост
+// Удаление поста (автор, модер или админ)
 app.delete('/api/posts/:id', (req, res) => {
     const postId = Number(req.params.id);
     const { username } = req.body;
+
     const db = readDB();
     const postIndex = db.posts.findIndex(p => p.id === postId);
     if (postIndex === -1) return res.status(404).json({ error: 'Пост не найден' });
 
-    if (db.posts[postIndex].author !== username) return res.status(403).json({ error: 'Чужое фото удалить нельзя!' });
+    const user = db.users.find(u => u.username.toLowerCase() === username.toLowerCase());
+    const isOwner = db.posts[postIndex].author.toLowerCase() === username.toLowerCase();
+    const isAdminOrMod = user && (user.role === 'admin' || user.role === 'moderator');
+
+    if (!isOwner && !isAdminOrMod) {
+        return res.status(403).json({ error: 'Недостаточно прав для удаления этого фото!' });
+    }
 
     db.posts.splice(postIndex, 1);
     writeDB(db);
     res.json({ success: true });
 });
 
-// Лайки + уведомление автору
+// Лайки
 app.post('/api/posts/:id/like', (req, res) => {
     const postId = Number(req.params.id);
     const { username } = req.body;
@@ -147,7 +156,7 @@ app.post('/api/posts/:id/like', (req, res) => {
     res.json({ success: true, likes: post.likes });
 });
 
-// Комментарии + уведомление автору
+// Комментарии
 app.post('/api/posts/:id/comment', (req, res) => {
     const postId = Number(req.params.id);
     const { username, text } = req.body;
@@ -193,7 +202,7 @@ app.post('/api/posts/:postId/comment/:commentId/reply', (req, res) => {
     res.json({ success: true });
 });
 
-// Удаление комментария
+// Удаление комментария (автор, модер или админ)
 app.delete('/api/posts/:postId/comment/:commentId', (req, res) => {
     const postId = Number(req.params.postId);
     const commentId = Number(req.params.commentId);
@@ -203,22 +212,47 @@ app.delete('/api/posts/:postId/comment/:commentId', (req, res) => {
     const post = db.posts.find(p => p.id === postId);
     if (!post) return res.status(404).json({ error: 'Пост не найден' });
 
+    const user = db.users.find(u => u.username.toLowerCase() === username.toLowerCase());
+    const isAdminOrMod = user && (user.role === 'admin' || user.role === 'moderator');
+
     if (isReply) {
         const comment = post.comments.find(c => c.id === parentId);
         if (!comment) return res.status(404).json({ error: 'Родительский коммент не найден' });
         const replyIndex = comment.replies.findIndex(r => r.id === commentId);
         if (replyIndex === -1) return res.status(404).json({ error: 'Ответ не найден' });
         
-        if (comment.replies[replyIndex].author !== username) return res.status(403).json({ error: 'Чужой комментарий удалить нельзя!' });
+        const isOwner = comment.replies[replyIndex].author.toLowerCase() === username.toLowerCase();
+        if (!isOwner && !isAdminOrMod) return res.status(403).json({ error: 'Недостаточно прав!' });
+        
         comment.replies.splice(replyIndex, 1);
     } else {
         const commentIndex = post.comments.findIndex(c => c.id === commentId);
         if (commentIndex === -1) return res.status(404).json({ error: 'Комментарий не найден' });
 
-        if (post.comments[commentIndex].author !== username) return res.status(403).json({ error: 'Чужой комментарий удалить нельзя!' });
+        const isOwner = post.comments[commentIndex].author.toLowerCase() === username.toLowerCase();
+        if (!isOwner && !isAdminOrMod) return res.status(403).json({ error: 'Недостаточно прав!' });
+
         post.comments.splice(commentIndex, 1);
     }
 
+    writeDB(db);
+    res.json({ success: true });
+});
+
+// Смена роли пользователю (доступно ТОЛЬКО админу)
+app.post('/api/admin/set-role', (req, res) => {
+    const { adminUsername, targetUsername, newRole } = req.body;
+    const db = readDB();
+
+    const admin = db.users.find(u => u.username.toLowerCase() === adminUsername.toLowerCase());
+    if (!admin || admin.role !== 'admin') {
+        return res.status(403).json({ error: 'Только администратор может изменять роли!' });
+    }
+
+    const target = db.users.find(u => u.username.toLowerCase() === targetUsername.toLowerCase());
+    if (!target) return res.status(404).json({ error: 'Пользователь не найден' });
+
+    target.role = newRole; // 'user', 'moderator', 'admin'
     writeDB(db);
     res.json({ success: true });
 });
@@ -233,6 +267,7 @@ app.get('/api/user/:username', (req, res) => {
     const userPosts = db.posts.filter(p => p.author.toLowerCase() === searchName);
     res.json({
         username: user.username,
+        role: user.role || 'user',
         bio: user.bio || 'Игрок сервера',
         avatarUrl: user.avatarUrl || '',
         notifications: user.notifications || [],
@@ -241,7 +276,6 @@ app.get('/api/user/:username', (req, res) => {
     });
 });
 
-// Обновление био и аватарки
 app.post('/api/user/update', upload.single('avatar'), (req, res) => {
     const { username, bio } = req.body;
     const db = readDB();
@@ -255,7 +289,6 @@ app.post('/api/user/update', upload.single('avatar'), (req, res) => {
     res.json({ success: true, bio: user.bio, avatarUrl: user.avatarUrl });
 });
 
-// Очистить уведомления
 app.post('/api/user/notifications/clear', (req, res) => {
     const { username } = req.body;
     const db = readDB();
