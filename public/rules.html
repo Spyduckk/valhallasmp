@@ -7,25 +7,29 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div class="container">
-    <div class="nav">
-        <div class="nav-tabs">
-            <a href="index.html" class="tab-btn">Главная</a>
-            <a href="gallery.html" class="tab-btn">Галерея</a>
-            <a href="rules.html" class="tab-btn active">Правила</a>
-        </div>
 
-        <div style="display: flex; gap: 6px; align-items: center;">
-            <input type="text" id="searchInput" placeholder="Найти игрока..." style="margin:0; padding:5px 10px; width:130px; font-size:13px;" onkeydown="if(event.key === 'Enter') searchUser()">
-            <button onclick="searchUser()" class="btn" style="width:auto; padding:5px 10px; font-size:13px;">🔍</button>
-        </div>
-
+<!-- GitHub Header -->
+<header class="gh-header">
+    <div class="gh-nav-left">
+        <a href="index.html" class="gh-logo">🐙 ValhallaSMP <span class="gh-subpath">/ правила</span></a>
+    </div>
+    <div class="gh-nav-right">
+        <input type="text" id="searchInput" placeholder="Type / to search" style="margin:0; padding:5px 10px; width:180px; font-size:13px;" onkeydown="if(event.key === 'Enter') searchUser()">
         <div class="auth-panel" id="authPanel">
-            <button class="login-btn" onclick="openAuthModal(true)">Войти / Регистрация</button>
+            <button class="login-btn" onclick="openAuthModal(true)">Sign in</button>
         </div>
     </div>
+</header>
 
-    <header>
+<!-- GitHub Sub-navigation -->
+<nav class="gh-subnav">
+    <a href="index.html" class="gh-tab">🏠 Главная</a>
+    <a href="gallery.html" class="gh-tab">📸 Галерея</a>
+    <a href="rules.html" class="gh-tab active">📜 Правила</a>
+</nav>
+
+<div class="container">
+    <header style="text-align: left; margin-bottom: 25px;">
         <h1>📜 Правила сервера Valhalla</h1>
         <p class="subtitle">Обязательны к прочтению для всех игроков</p>
     </header>
@@ -108,9 +112,10 @@
         if (!user) return;
 
         const res = await fetch(`/api/user/${encodeURIComponent(user.username)}`);
-        const userData = res.ok ? await res.json() : { notifications: [], role: 'user' };
+        const userData = res.ok ? await res.json() : { notifications: [], role: 'user', avatarUrl: '' };
         
         user.role = userData.role;
+        user.avatarUrl = userData.avatarUrl;
         localStorage.setItem('user', JSON.stringify(user));
 
         const unreadCount = userData.notifications ? userData.notifications.length : 0;
@@ -124,19 +129,19 @@
             notifHtml = `<div style="font-size:12px; color:var(--text-secondary); text-align:center;">Нет новых уведомлений</div>`;
         }
 
-        let roleBadge = '';
-        if (user.role === 'admin') roleBadge = ' <span style="color:#f85149; font-size:11px;">[Админ]</span>';
-        else if (user.role === 'moderator') roleBadge = ' <span style="color:#34d399; font-size:11px;">[Модер]</span>';
+        let avatarHtml = userData.avatarUrl 
+            ? `<img src="${userData.avatarUrl}" style="width:30px; height:30px; border-radius:50%; object-fit:cover; border:1px solid var(--accent); vertical-align:middle;">`
+            : `<span style="font-size:20px; vertical-align:middle;">👤</span>`;
 
         const authPanel = document.getElementById('authPanel');
         if(authPanel) {
             authPanel.innerHTML = `
-                <div style="position:relative; display:inline-block; margin-right: 10px;">
+                <div style="position:relative; display:inline-block; margin-right: 8px;">
                     <span onclick="toggleNotifMenu()" style="cursor:pointer; font-size:16px;" title="Уведомления">🔔<span id="notifBadge" style="background:#f85149; color:white; border-radius:50%; padding:1px 5px; font-size:10px; position:absolute; top:-5px; right:-10px; display:${unreadCount>0?'inline':'none'}">${unreadCount}</span></span>
                     <div id="notifDropdown" class="notif-dropdown">${notifHtml}</div>
                 </div>
-                👤 <a href="profile.html?user=${encodeURIComponent(user.username)}" style="color:var(--accent); text-decoration:none;"><b>${user.username}</b></a>${roleBadge} 
-                <button onclick="localStorage.removeItem('user'); location.reload();" style="background:#f85149; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; margin-left:8px;">Выйти</button>
+                <a href="profile.html?user=${encodeURIComponent(user.username)}" style="text-decoration:none;" title="Профиль">${avatarHtml}</a>
+                <button onclick="localStorage.removeItem('user'); location.reload();" style="background:#f85149; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; margin-left:8px; font-size:12px;">Выйти</button>
             `;
         }
     }
