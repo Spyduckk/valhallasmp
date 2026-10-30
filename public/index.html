@@ -15,7 +15,6 @@
             <a href="rules.html" class="tab-btn">Правила</a>
         </div>
         
-        <!-- Поиск игроков (поиск по Enter) -->
         <div style="display: flex; gap: 6px; align-items: center;">
             <input type="text" id="searchInput" placeholder="Найти игрока..." style="margin:0; padding:5px 10px; width:130px; font-size:13px;" onkeydown="if(event.key === 'Enter') searchUser()">
             <button onclick="searchUser()" class="btn" style="width:auto; padding:5px 10px; font-size:13px;">🔍</button>
@@ -48,19 +47,16 @@
     </section>
 </div>
 
-<!-- Модалка авторизации (отправка по Enter) -->
+<!-- Модалка авторизации -->
 <div id="authModal" class="modal">
     <div class="modal-content" onkeydown="if(event.key === 'Enter') submitAuth()">
         <span class="close-modal" onclick="closeAuthModal()">&times;</span>
         <h2 id="modalTitle" style="color: var(--accent); margin-top:0;">Вход</h2>
-        
         <input type="text" id="authLoginInput" placeholder="Юзернейм или Email">
         <div id="usernameField" style="display: none;"><input type="text" id="authUsername" placeholder="Юзернейм (мин. 5 символов)"></div>
         <div id="emailField"><input type="email" id="authEmail" placeholder="Email"></div>
         <input type="password" id="authPassword" placeholder="Пароль">
-        
         <button class="btn" id="modalActionBtn" onclick="submitAuth()">Войти</button>
-        
         <div id="modalSwitchText" style="margin-top:15px; text-align:center; font-size:14px; color:var(--text-secondary); cursor:pointer;">
             Нет аккаунта? <span onclick="toggleAuthMode()" style="color:var(--accent);">Зарегистрироваться</span>
         </div>
@@ -107,13 +103,60 @@
         if (query) window.location.href = `profile.html?user=${encodeURIComponent(query)}`;
     }
 
-    const user = JSON.parse(localStorage.getItem('user'));
-    if (user) {
+    async function checkAuthUserPanel() {
+        const user = JSON.parse(localStorage.getItem('user'));
+        if (!user) return;
+
+        const res = await fetch(`/api/user/${encodeURIComponent(user.username)}`);
+        const userData = res.ok ? await res.json() : { notifications: [], role: 'user' };
+        
+        user.role = userData.role;
+        localStorage.setItem('user', JSON.stringify(user));
+
+        const unreadCount = userData.notifications ? userData.notifications.length : 0;
+        let notifHtml = '';
+        if (unreadCount > 0) {
+            userData.notifications.forEach(n => {
+                notifHtml += `<div class="notif-item">🔔 ${n.text} <span style="color:var(--text-secondary); font-size:10px;">(${n.time})</span></div>`;
+            });
+            notifHtml += `<button onclick="clearNotifications()" class="btn" style="margin-top:8px; padding:4px; font-size:11px;">Очистить</button>`;
+        } else {
+            notifHtml = `<div style="font-size:12px; color:var(--text-secondary); text-align:center;">Нет новых уведомлений</div>`;
+        }
+
+        let roleBadge = '';
+        if (user.role === 'admin') roleBadge = ' <span style="color:#f85149; font-size:11px;">[Админ]</span>';
+        else if (user.role === 'moderator') roleBadge = ' <span style="color:#34d399; font-size:11px;">[Модер]</span>';
+
         const authPanel = document.getElementById('authPanel');
         if(authPanel) {
-            authPanel.innerHTML = `👤 <a href="profile.html?user=${encodeURIComponent(user.username)}" style="color:var(--accent); text-decoration:none;"><b>${user.username}</b></a> <button onclick="localStorage.removeItem('user'); location.reload();" style="background:#f85149; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; margin-left:8px;">Выйти</button>`;
+            authPanel.innerHTML = `
+                <div style="position:relative; display:inline-block; margin-right: 10px;">
+                    <span onclick="toggleNotifMenu()" style="cursor:pointer; font-size:16px;" title="Уведомления">🔔<span id="notifBadge" style="background:#f85149; color:white; border-radius:50%; padding:1px 5px; font-size:10px; position:absolute; top:-5px; right:-10px; display:${unreadCount>0?'inline':'none'}">${unreadCount}</span></span>
+                    <div id="notifDropdown" class="notif-dropdown">${notifHtml}</div>
+                </div>
+                👤 <a href="profile.html?user=${encodeURIComponent(user.username)}" style="color:var(--accent); text-decoration:none;"><b>${user.username}</b></a>${roleBadge} 
+                <button onclick="localStorage.removeItem('user'); location.reload();" style="background:#f85149; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; margin-left:8px;">Выйти</button>
+            `;
         }
     }
+
+    function toggleNotifMenu() {
+        const drop = document.getElementById('notifDropdown');
+        drop.style.display = drop.style.display === 'block' ? 'none' : 'block';
+    }
+
+    async function clearNotifications() {
+        const user = JSON.parse(localStorage.getItem('user'));
+        await fetch('/api/user/notifications/clear', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: user.username })
+        });
+        location.reload();
+    }
+
+    checkAuthUserPanel();
 </script>
 </body>
 </html>
