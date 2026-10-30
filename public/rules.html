@@ -58,7 +58,8 @@
         <span class="close-modal" onclick="closeAuthModal()">&times;</span>
         <h2 id="modalTitle" style="color: var(--accent); margin-top:0;">Вход</h2>
         
-        <input type="text" id="authUsername" placeholder="Юзернейм (мин. 5 символов)">
+        <input type="text" id="authLoginInput" placeholder="Юзернейм или Email">
+        <div id="usernameField" style="display: none;"><input type="text" id="authUsername" placeholder="Юзернейм (мин. 5 символов)"></div>
         <div id="emailField"><input type="email" id="authEmail" placeholder="Email"></div>
         <input type="password" id="authPassword" placeholder="Пароль">
         
@@ -79,19 +80,20 @@
     function updateUI() {
         document.getElementById('modalTitle').innerText = isLoginMode ? "Вход" : "Регистрация";
         document.getElementById('modalActionBtn').innerText = isLoginMode ? "Войти" : "Зарегистрироваться";
+        document.getElementById('authLoginInput').style.display = isLoginMode ? "block" : "none";
+        document.getElementById('usernameField').style.display = isLoginMode ? "none" : "block";
         document.getElementById('emailField').style.display = isLoginMode ? "none" : "block";
         document.getElementById('modalSwitchText').innerHTML = isLoginMode ? 'Нет аккаунта? <span onclick="toggleAuthMode()" style="color:var(--accent);">Зарегистрироваться</span>' : 'Уже есть аккаунт? <span onclick="toggleAuthMode()" style="color:var(--accent);">Войти</span>';
     }
 
     async function submitAuth() {
-        const username = document.getElementById('authUsername').value;
         const password = document.getElementById('authPassword').value;
-        const email = document.getElementById('emailField').style.display !== 'none' ? document.getElementById('authEmail').value : '';
-
-        if (!isLoginMode && username.length < 5) return alert("Юзернейм должен быть не менее 5 символов!");
-
         const url = isLoginMode ? '/api/login' : '/api/register';
-        const body = isLoginMode ? { username, password } : { username, email, password };
+        const body = isLoginMode 
+            ? { login: document.getElementById('authLoginInput').value, password } 
+            : { username: document.getElementById('authUsername').value, email: document.getElementById('authEmail').value, password };
+
+        if (!isLoginMode && document.getElementById('authUsername').value.length < 5) return alert("Юзернейм должен быть не менее 5 символов!");
 
         const res = await fetch(url, {
             method: 'POST',
