@@ -1,115 +1,242 @@
 :root {
-    --bg: #0b0f19;
-    --card-bg: #111827;
-    --box-bg: #1f2937;
-    --accent: #60a5fa;
-    --text: #e2e8f0;
-    --text-secondary: #9ca3af;
+    --bg-main: #0e1117;          /* Глубокий темный фон а-ля Render */
+    --card-bg: #161b22;          /* Цвет карточек */
+    --box-bg: #21262d;           /* Цвет внутренних блоков / полей */
+    --border: #30363d;           /* Тонкие строгие границы */
+    --accent: #58a6ff;           /* Фирменный синий акцент Render */
+    --accent-hover: #79c0ff;     /* Светло-синий при наведении */
+    --text: #c9d1d9;             /* Основной текст (мягкий белый) */
+    --text-secondary: #8b949e;   /* Второстепенный серый текст */
+    --danger: #f85149;           /* Ошибка / выход */
 }
+
 body {
-    background-color: var(--bg);
+    background-color: var(--bg-main);
     color: var(--text);
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     margin: 0;
-    padding: 20px;
+    padding: 40px 20px;
     display: flex;
     justify-content: center;
 }
+
 .container {
     max-width: 750px;
     width: 100%;
     background: var(--card-bg);
     padding: 30px;
-    border-radius: 16px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-    border: 1px solid #1f2937;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--border);
 }
+
+/* Навигация в стиле панели */
 .nav {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 25px;
-    border-bottom: 1px solid #1f2937;
+    margin-bottom: 30px;
+    border-bottom: 1px solid var(--border);
     padding-bottom: 15px;
 }
-.nav-tabs { display: flex; gap: 10px; }
-.tab-btn {
-    background: var(--box-bg);
-    border: none;
-    color: var(--text);
-    padding: 8px 16px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: bold;
-    text-decoration: none;
-    transition: 0.2s;
+
+.nav-tabs {
+    display: flex;
+    gap: 8px;
 }
-.tab-btn.active, .tab-btn:hover { background: var(--accent); color: #000; }
-.login-btn {
-    background: #3b82f6;
-    color: white;
-    border: none;
+
+.tab-btn {
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--text-secondary);
     padding: 6px 14px;
     border-radius: 6px;
     cursor: pointer;
-    font-weight: bold;
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: 0.2s;
 }
-.login-btn:hover { background: #2563eb; }
 
-header { text-align: center; margin-bottom: 25px; }
-h1 { color: var(--accent); margin: 0 0 5px 0; font-size: 32px; }
-.subtitle { color: var(--text-secondary); font-size: 16px; margin: 0; }
+.tab-btn:hover {
+    color: var(--text);
+    background: var(--box-bg);
+}
 
-.ip-card {
-    background: linear-gradient(135deg, #1e3a8a, #1e40af);
-    padding: 20px;
-    border-radius: 12px;
-    text-align: center;
+.tab-btn.active {
+    color: var(--text);
+    background: var(--box-bg);
+    border-color: var(--border);
+}
+
+/* Кнопка входа */
+.login-btn {
+    background: #238636; /* Зеленая кнопка действий а-ля GitHub/Render */
+    color: white;
+    border: 1px solid rgba(27, 31, 36, 0.15);
+    padding: 6px 14px;
+    border-radius: 6px;
     cursor: pointer;
-    border: 1px solid #3b82f6;
+    font-size: 14px;
+    font-weight: 600;
+    transition: 0.2s;
+}
+
+.login-btn:hover {
+    background: #2ea043;
+}
+
+/* Заголовки */
+header {
+    text-align: left;
     margin-bottom: 25px;
 }
-.ip-card:hover { transform: scale(1.02); }
-.ip-title { font-size: 13px; color: #93c5fd; display: block; margin-bottom: 5px; }
-.ip-address { font-size: 20px; font-weight: bold; font-family: monospace; color: #ffffff; }
 
-.info-grid { display: flex; gap: 15px; margin-bottom: 25px; }
-.info-box { flex: 1; background: var(--box-bg); padding: 15px; border-radius: 10px; text-align: center; }
-.info-box h3 { margin: 0 0 8px 0; color: #f43f5e; font-size: 16px; }
-.info-box p { margin: 0; font-size: 14px; color: var(--text-secondary); }
+h1, h2 {
+    color: var(--text);
+    font-weight: 600;
+}
 
-.rules { background: var(--box-bg); padding: 20px; border-radius: 10px; }
-.rules h2 { margin-top: 0; color: #34d399; font-size: 20px; text-align: center; }
-.rules ul { padding-left: 20px; margin: 0; }
-.rules li { font-size: 14px; color: var(--text-secondary); margin-bottom: 10px; line-height: 1.5; }
+h1 {
+    font-size: 26px;
+    margin: 0 0 5px 0;
+}
 
-.form-group {
+.subtitle {
+    color: var(--text-secondary);
+    font-size: 14px;
+    margin: 0;
+}
+
+/* IP Карточка в стиле панели мониторинга */
+.ip-card {
     background: var(--box-bg);
     padding: 20px;
-    border-radius: 12px;
+    border-radius: 8px;
+    text-align: left;
+    cursor: pointer;
+    transition: 0.2s;
+    border: 1px solid var(--border);
+    margin-bottom: 25px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.ip-card:hover {
+    border-color: var(--accent);
+}
+
+.ip-title {
+    font-size: 12px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.ip-address {
+    font-size: 18px;
+    font-weight: 600;
+    font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, monospace;
+    color: var(--accent);
+}
+
+/* Грид информации */
+.info-grid {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+.info-box {
+    flex: 1;
+    background: var(--box-bg);
+    padding: 15px 20px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    text-align: left;
+}
+
+.info-box h3 {
+    margin: 0 0 6px 0;
+    color: var(--text);
+    font-size: 14px;
+}
+
+.info-box p {
+    margin: 0;
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+/* Секция правил и форм */
+.rules, .form-group {
+    background: var(--box-bg);
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
     margin-bottom: 20px;
 }
-.form-group input, .form-group textarea {
+
+.rules h2 {
+    margin-top: 0;
+    font-size: 16px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 10px;
+}
+
+.rules ul {
+    padding-left: 20px;
+    margin: 0;
+}
+
+.rules li {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+    line-height: 1.5;
+}
+
+.rules li b {
+    color: var(--text);
+}
+
+/* Поля ввода */
+input, textarea {
     width: 100%;
-    padding: 10px;
-    margin-bottom: 10px;
-    background: #111827;
-    border: 1px solid #374151;
-    color: white;
+    padding: 10px 12px;
+    margin-bottom: 12px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    color: var(--text);
     border-radius: 6px;
     box-sizing: border-box;
+    font-size: 14px;
 }
+
+input:focus, textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.3);
+}
+
+/* Кнопки */
 .btn {
-    background: #34d399;
-    color: #000;
+    background: var(--accent);
+    color: #0d1117;
     border: none;
-    padding: 10px 20px;
-    font-weight: bold;
+    padding: 10px 16px;
+    font-weight: 600;
     border-radius: 6px;
     cursor: pointer;
+    font-size: 14px;
     width: 100%;
+    transition: 0.2s;
 }
-.btn:hover { background: #059669; color: white; }
+
+.btn:hover {
+    background: var(--accent-hover);
+}
 
 /* Модальное окно */
 .modal {
@@ -118,23 +245,28 @@ h1 { color: var(--accent); margin: 0 0 5px 0; font-size: 32px; }
     z-index: 100;
     left: 0; top: 0;
     width: 100%; height: 100%;
-    background-color: rgba(0,0,0,0.7);
+    background-color: rgba(14, 17, 23, 0.80);
+    backdrop-filter: blur(4px);
     justify-content: center;
     align-items: center;
 }
+
 .modal-content {
     background: var(--card-bg);
-    padding: 30px;
-    border-radius: 16px;
-    width: 350px;
-    border: 1px solid #374151;
+    padding: 25px;
+    border-radius: 12px;
+    width: 360px;
+    border: 1px solid var(--border);
+    box-shadow: 0 16px 32px rgba(0,0,0,0.6);
     position: relative;
 }
+
 .close-modal {
     position: absolute;
     top: 15px; right: 20px;
-    font-size: 24px;
+    font-size: 20px;
     cursor: pointer;
     color: var(--text-secondary);
 }
-.close-modal:hover { color: white; }
+
+.close-modal:hover { color: var(--text); }
