@@ -12,6 +12,7 @@
         <div class="nav-tabs">
             <a href="index.html" class="tab-btn active">Главная</a>
             <a href="gallery.html" class="tab-btn">Галерея</a>
+            <a href="rules.html" class="tab-btn">Правила</a>
         </div>
         <div class="auth-panel" id="authPanel">
             <button class="login-btn" onclick="openAuthModal(true)">Войти / Регистрация</button>
@@ -33,13 +34,10 @@
         <div class="info-box"><h3>🔒 Вайтлист</h3><p>Пока без вайтлиста, заходи и играй!</p></div>
     </div>
 
-    <section class="rules">
-        <h2>📜 Основные правила сервера</h2>
-        <ul>
-            <li><b>1. Общие положения:</b> Администрация действует на своё усмотрение.</li>
-            <li><b>2. Общение:</b> Запрещен спам, флуд и оскорбления.</li>
-            <li><b>3. Игровой процесс:</b> Гриферство строго запрещено.</li>
-        </ul>
+    <section class="rules" style="text-align: center; padding: 25px;">
+        <h2>Добро пожаловать на ValhallaSMP!</h2>
+        <p style="color: var(--text-secondary); margin-bottom: 15px;">Перед началом игры обязательно ознакомьтесь с регламентом и правилами нашего сервера во вкладке сверху.</p>
+        <a href="rules.html" class="btn" style="display: inline-block; width: auto; text-decoration: none;">Читать правила</a>
     </section>
 </div>
 
@@ -97,7 +95,7 @@
 
     const user = JSON.parse(localStorage.getItem('user'));
     if (user) {
-        document.getElementById('authPanel').innerHTML = `<span>👤 <b>${user.username}</b></span> <button onclick="localStorage.removeItem('user'); location.reload();" style="background:#f43f5e; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;">Выйти</button>`;
+        document.getElementById('authPanel').innerHTML = `👤 <b>${user.username}</b> <button onclick="localStorage.removeItem('user'); location.reload();" style="background:#f43f5e; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;">Выйти</button>`;
     }
 </script>
 </body>
