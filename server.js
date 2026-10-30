@@ -10,7 +10,6 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Папки для файлов
 const uploadDir = path.join(__dirname, 'public', 'uploads');
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
@@ -20,7 +19,6 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// Надежное хранение базы без сброса
 const dbFile = path.join(__dirname, 'database.json');
 function readDB() {
     if (!fs.existsSync(dbFile)) {
@@ -41,6 +39,15 @@ function writeDB(data) {
     fs.writeFileSync(dbFile, JSON.stringify(data, null, 2));
 }
 
+// Уведомления
+function addNotification(db, username, text) {
+    const user = db.users.find(u => u.username.toLowerCase() === username.toLowerCase());
+    if (user) {
+        if (!user.notifications) user.notifications = [];
+        user.notifications.unshift({ id: Date.now(), text, read: false, time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) });
+    }
+}
+
 // Регистрация
 app.post('/api/register', (req, res) => {
     const { username, email, password } = req.body;
@@ -51,7 +58,14 @@ app.post('/api/register', (req, res) => {
     if (db.users.find(u => u.email === email)) return res.status(400).json({ error: 'Email уже занят!' });
     if (db.users.find(u => u.username.toLowerCase() === username.toLowerCase())) return res.status(400).json({ error: 'Юзернейм уже занят!' });
 
-    db.users.push({ username, email, password, bio: 'Игрок сервера ValhallaSMP 26.2' });
+    db.users.push({ 
+        username, 
+        email, 
+        password, 
+        bio: 'Игрок сервера ValhallaSMP 26.2', 
+        avatarUrl: '',
+        notifications: []
+    });
     writeDB(db);
     res.json({ success: true, username, email });
 });
@@ -74,9 +88,9 @@ app.get('/api/posts', (req, res) => {
     res.json(db.posts.reverse());
 });
 
-// Загрузить пост
+// Загрузить пост с категорий
 app.post('/api/posts', upload.single('image'), (req, res) => {
-    const { caption, username } = req.body;
+    const { caption, username, category } = req.body;
     if (!req.file) return res.status(400).json({ error: 'Картинка не загружена' });
 
     const db = readDB();
@@ -84,6 +98,7 @@ app.post('/api/posts', upload.single('image'), (req, res) => {
         id: Date.now(),
         imageUrl: `/uploads/${req.file.filename}`,
         caption: caption || '',
+        category: category || 'Разное',
         author: username || 'Аноним',
         likes: [],
         comments: []
@@ -94,25 +109,22 @@ app.post('/api/posts', upload.single('image'), (req, res) => {
     res.json({ success: true });
 });
 
-// Удалить СВОЙ пост (фотографию)
+// Удалить пост
 app.delete('/api/posts/:id', (req, res) => {
     const postId = Number(req.params.id);
     const { username } = req.body;
-
     const db = readDB();
     const postIndex = db.posts.findIndex(p => p.id === postId);
     if (postIndex === -1) return res.status(404).json({ error: 'Пост не найден' });
 
-    if (db.posts[postIndex].author !== username) {
-        return res.status(403).json({ error: 'Можно удалять только свои фотографии!' });
-    }
+    if (db.posts[postIndex].author !== username) return res.status(403).json({ error: 'Чужое фото удалить нельзя!' });
 
     db.posts.splice(postIndex, 1);
     writeDB(db);
     res.json({ success: true });
 });
 
-// Лайки
+// Лайки + уведомление автору
 app.post('/api/posts/:id/like', (req, res) => {
     const postId = Number(req.params.id);
     const { username } = req.body;
@@ -122,14 +134,20 @@ app.post('/api/posts/:id/like', (req, res) => {
 
     if (!post.likes) post.likes = [];
     const index = post.likes.indexOf(username);
-    if (index > -1) post.likes.splice(index, 1);
-    else post.likes.push(username);
+    if (index > -1) {
+        post.likes.splice(index, 1);
+    } else {
+        post.likes.push(username);
+        if (post.author !== username) {
+            addNotification(db, post.author, `${username} оценил(а) ваш скриншот ❤️`);
+        }
+    }
 
     writeDB(db);
     res.json({ success: true, likes: post.likes });
 });
 
-// Комментарии
+// Комментарии + уведомление автору
 app.post('/api/posts/:id/comment', (req, res) => {
     const postId = Number(req.params.id);
     const { username, text } = req.body;
@@ -142,11 +160,15 @@ app.post('/api/posts/:id/comment', (req, res) => {
     if (!post.comments) post.comments = [];
     post.comments.push({ id: Date.now(), author: username, text: text.trim(), replies: [] });
 
+    if (post.author !== username) {
+        addNotification(db, post.author, `${username} оставил(а) комментарий к вашему фото`);
+    }
+
     writeDB(db);
     res.json({ success: true, comments: post.comments });
 });
 
-// Ответы на комментарии
+// Ответы
 app.post('/api/posts/:postId/comment/:commentId/reply', (req, res) => {
     const postId = Number(req.params.postId);
     const commentId = Number(req.params.commentId);
@@ -163,11 +185,15 @@ app.post('/api/posts/:postId/comment/:commentId/reply', (req, res) => {
     if (!comment.replies) comment.replies = [];
     comment.replies.push({ id: Date.now(), author: username, text: text.trim() });
 
+    if (comment.author !== username) {
+        addNotification(db, comment.author, `${username} ответил(а) на ваш комментарий`);
+    }
+
     writeDB(db);
     res.json({ success: true });
 });
 
-// Удаление комментария/ответа
+// Удаление комментария
 app.delete('/api/posts/:postId/comment/:commentId', (req, res) => {
     const postId = Number(req.params.postId);
     const commentId = Number(req.params.commentId);
@@ -197,7 +223,7 @@ app.delete('/api/posts/:postId/comment/:commentId', (req, res) => {
     res.json({ success: true });
 });
 
-// Профиль игрока (поиск)
+// Профиль игрока
 app.get('/api/user/:username', (req, res) => {
     const searchName = req.params.username.toLowerCase();
     const db = readDB();
@@ -208,20 +234,37 @@ app.get('/api/user/:username', (req, res) => {
     res.json({
         username: user.username,
         bio: user.bio || 'Игрок сервера',
+        avatarUrl: user.avatarUrl || '',
+        notifications: user.notifications || [],
         postsCount: userPosts.length,
         posts: userPosts.reverse()
     });
 });
 
-app.post('/api/user/bio', (req, res) => {
+// Обновление био и аватарки
+app.post('/api/user/update', upload.single('avatar'), (req, res) => {
     const { username, bio } = req.body;
     const db = readDB();
     const user = db.users.find(u => u.username.toLowerCase() === username.toLowerCase());
     if (!user) return res.status(404).json({ error: 'Пользователь не найден' });
 
-    user.bio = bio;
+    if (bio !== undefined) user.bio = bio;
+    if (req.file) user.avatarUrl = `/uploads/${req.file.filename}`;
+
     writeDB(db);
-    res.json({ success: true, bio });
+    res.json({ success: true, bio: user.bio, avatarUrl: user.avatarUrl });
+});
+
+// Очистить уведомления
+app.post('/api/user/notifications/clear', (req, res) => {
+    const { username } = req.body;
+    const db = readDB();
+    const user = db.users.find(u => u.username.toLowerCase() === username.toLowerCase());
+    if (user) {
+        user.notifications = [];
+        writeDB(db);
+    }
+    res.json({ success: true });
 });
 
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
