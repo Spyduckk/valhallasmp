@@ -27,7 +27,6 @@
 
     <h2>📸 Галерея сервера</h2>
 
-    <!-- Фильтр по категориям -->
     <div style="margin-bottom: 20px; display: flex; gap: 8px; align-items: center;">
         <span style="font-size: 13px; color: var(--text-secondary);">Категория:</span>
         <select id="categoryFilter" onchange="loadPosts()" style="margin:0; width: 180px; padding: 6px; font-size: 13px;">
@@ -131,11 +130,14 @@
         const user = JSON.parse(localStorage.getItem('user'));
         if (!user) return;
 
-        // Подгружаем актуальные уведомления для колокольчика
         const res = await fetch(`/api/user/${encodeURIComponent(user.username)}`);
-        const userData = res.ok ? await res.json() : { notifications: [] };
-        const unreadCount = userData.notifications ? userData.notifications.length : 0;
+        const userData = res.ok ? await res.json() : { notifications: [], role: 'user' };
+        
+        // Обновляем роль в локалсторадже
+        user.role = userData.role;
+        localStorage.setItem('user', JSON.stringify(user));
 
+        const unreadCount = userData.notifications ? userData.notifications.length : 0;
         let notifHtml = '';
         if (unreadCount > 0) {
             userData.notifications.forEach(n => {
@@ -146,6 +148,10 @@
             notifHtml = `<div style="font-size:12px; color:var(--text-secondary); text-align:center;">Нет новых уведомлений</div>`;
         }
 
+        let roleBadge = '';
+        if (user.role === 'admin') roleBadge = ' <span style="color:#f85149; font-size:11px;">[Админ]</span>';
+        else if (user.role === 'moderator') roleBadge = ' <span style="color:#34d399; font-size:11px;">[Модер]</span>';
+
         const authPanel = document.getElementById('authPanel');
         if(authPanel) {
             authPanel.innerHTML = `
@@ -153,7 +159,7 @@
                     <span onclick="toggleNotifMenu()" style="cursor:pointer; font-size:16px;" title="Уведомления">🔔<span id="notifBadge" style="background:#f85149; color:white; border-radius:50%; padding:1px 5px; font-size:10px; position:absolute; top:-5px; right:-10px; display:${unreadCount>0?'inline':'none'}">${unreadCount}</span></span>
                     <div id="notifDropdown" class="notif-dropdown">${notifHtml}</div>
                 </div>
-                👤 <a href="profile.html?user=${encodeURIComponent(user.username)}" style="color:var(--accent); text-decoration:none;"><b>${user.username}</b></a> 
+                👤 <a href="profile.html?user=${encodeURIComponent(user.username)}" style="color:var(--accent); text-decoration:none;"><b>${user.username}</b></a>${roleBadge} 
                 <button onclick="localStorage.removeItem('user'); location.reload();" style="background:#f85149; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; margin-left:8px;">Выйти</button>
             `;
         }
@@ -335,18 +341,22 @@
             const isLiked = user && post.likes && post.likes.includes(user.username);
             const likeColor = isLiked ? '#f85149' : 'var(--text-secondary)';
 
-            let deletePostBtn = (user && user.username === post.author) ? `<button onclick="deletePost(${post.id})" style="background:none; border:none; color:var(--danger); cursor:pointer; font-size:13px; font-weight:600; float:right;">🗑️ Удалить фото</button>` : '';
+            // Модератор или админ могут удалить любое фото
+            const canDeletePost = user && (user.username === post.author || user.role === 'admin' || user.role === 'moderator');
+            let deletePostBtn = canDeletePost ? `<button onclick="deletePost(${post.id})" style="background:none; border:none; color:var(--danger); cursor:pointer; font-size:13px; font-weight:600; float:right;">🗑️ Удалить фото</button>` : '';
 
             let commentsHtml = '';
             if (post.comments) {
                 post.comments.forEach(c => {
-                    let deleteBtn = (user && user.username === c.author) ? `<span class="delete-text" onclick="deleteComment(${post.id}, ${c.id})">🗑️ Удалить</span>` : '';
+                    const canDeleteComment = user && (user.username === c.author || user.role === 'admin' || user.role === 'moderator');
+                    let deleteBtn = canDeleteComment ? `<span class="delete-text" onclick="deleteComment(${post.id}, ${c.id})">🗑️ Удалить</span>` : '';
                     let replyBtn = user ? `<span onclick="showReplyInput(${post.id}, ${c.id})">💬 Ответить</span>` : '';
 
                     let repliesHtml = '';
                     if (c.replies) {
                         c.replies.forEach(r => {
-                            let deleteReplyBtn = (user && user.username === r.author) ? `<span class="delete-text" onclick="deleteComment(${post.id}, ${r.id}, true, ${c.id})">🗑️</span>` : '';
+                            const canDeleteReply = user && (user.username === r.author || user.role === 'admin' || user.role === 'moderator');
+                            let deleteReplyBtn = canDeleteReply ? `<span class="delete-text" onclick="deleteComment(${post.id}, ${r.id}, true, ${c.id})">🗑️</span>` : '';
                             repliesHtml += `
                                 <div class="reply-box">
                                     <a href="profile.html?user=${encodeURIComponent(r.author)}" style="color:var(--accent); text-decoration:none;"><b>${r.author}</b></a>: ${r.text}
