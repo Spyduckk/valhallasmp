@@ -7,14 +7,15 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
 <div class="container">
     <div class="nav">
         <div class="nav-tabs">
             <a href="index.html" class="tab-btn active">Главная</a>
             <a href="gallery.html" class="tab-btn">Галерея</a>
         </div>
-        <div class="auth-panel" id="authPanel"></div>
+        <div class="auth-panel" id="authPanel">
+            <button class="login-btn" onclick="openAuthModal(true)">Войти / Регистрация</button>
+        </div>
     </div>
 
     <header>
@@ -28,46 +29,76 @@
     </div>
 
     <div class="info-grid">
-        <div class="info-box">
-            <h3>🌍 Мир</h3>
-            <p>Границы мира: 10к на 10к блоков</p>
-        </div>
-        <div class="info-box">
-            <h3>🔒 Вайтлист</h3>
-            <p>Пока без вайтлиста, заходи и играй!</p>
-        </div>
+        <div class="info-box"><h3>🌍 Мир</h3><p>Границы мира: 10к на 10к блоков</p></div>
+        <div class="info-box"><h3>🔒 Вайтлист</h3><p>Пока без вайтлиста, заходи и играй!</p></div>
     </div>
 
     <section class="rules">
         <h2>📜 Основные правила сервера</h2>
         <ul>
-            <li><b>1. Общие положения:</b> Администрация действует на своё усмотрение. Незнание правил не освобождает от ответственности.</li>
-            <li><b>2. Общение:</b> Запрещен спам, флуд, реклама и оскорбления.</li>
-            <li><b>3. Игровой процесс:</b> Гриферство строго запрещено. Лаг-машины караются баном.</li>
+            <li><b>1. Общие положения:</b> Администрация действует на своё усмотрение.</li>
+            <li><b>2. Общение:</b> Запрещен спам, флуд и оскорбления.</li>
+            <li><b>3. Игровой процесс:</b> Гриферство строго запрещено.</li>
         </ul>
     </section>
 </div>
 
-<!-- МОДАЛЬНОЕ ОКНО АВТОРИЗАЦИИ -->
+<!-- Модалка авторизации -->
 <div id="authModal" class="modal">
     <div class="modal-content">
         <span class="close-modal" onclick="closeAuthModal()">&times;</span>
-        <h2 id="modalTitle" style="margin-top: 0; color: var(--accent);">Вход</h2>
-        
-        <div id="usernameField" style="display: none;">
-            <input type="text" id="authUsername" placeholder="Юзернейм (мин. 5 символов)">
-        </div>
+        <h2 id="modalTitle" style="color: var(--accent); margin-top:0;">Вход</h2>
+        <div id="usernameField" style="display: none;"><input type="text" id="authUsername" placeholder="Юзернейм (мин. 5 символов)"></div>
         <input type="email" id="authEmail" placeholder="Email">
         <input type="password" id="authPassword" placeholder="Пароль">
-        
         <button class="btn" id="modalActionBtn" onclick="submitAuth()">Войти</button>
-        
-        <div class="auth-switch" id="modalSwitchText">
-            Нет аккаунта? <span onclick="toggleAuthMode()">Зарегистрироваться</span>
+        <div id="modalSwitchText" style="margin-top:15px; text-align:center; font-size:14px; color:var(--text-secondary); cursor:pointer;">
+            Нет аккаунта? <span onclick="toggleAuthMode()" style="color:var(--accent);">Зарегистрироваться</span>
         </div>
     </div>
 </div>
 
-<script type="module" src="auth.js"></script>
+<script>
+    let isLoginMode = true;
+    function openAuthModal(login) { isLoginMode = login; document.getElementById('authModal').style.display = 'flex'; updateUI(); }
+    function closeAuthModal() { document.getElementById('authModal').style.display = 'none'; }
+    function toggleAuthMode() { isLoginMode = !isLoginMode; updateUI(); }
+    function updateUI() {
+        document.getElementById('modalTitle').innerText = isLoginMode ? "Вход" : "Регистрация";
+        document.getElementById('modalActionBtn').innerText = isLoginMode ? "Войти" : "Зарегистрироваться";
+        document.getElementById('usernameField').style.display = isLoginMode ? "none" : "block";
+        document.getElementById('modalSwitchText').innerHTML = isLoginMode ? 'Нет аккаунта? <span onclick="toggleAuthMode()" style="color:var(--accent);">Зарегистрироваться</span>' : 'Уже есть аккаунт? <span onclick="toggleAuthMode()" style="color:var(--accent);">Войти</span>';
+    }
+
+    async function submitAuth() {
+        const email = document.getElementById('authEmail').value;
+        const password = document.getElementById('authPassword').value;
+        const username = document.getElementById('authUsername').value;
+
+        const url = isLoginMode ? '/api/login' : '/api/register';
+        const body = isLoginMode ? { email, password } : { username, email, password };
+
+        if (!isLoginMode && username.length < 5) return alert("Юзернейм должен быть не менее 5 символов!");
+
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (data.success) {
+            localStorage.setItem('user', JSON.stringify(data));
+            alert("Успешно!");
+            location.reload();
+        } else {
+            alert(data.error);
+        }
+    }
+
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (user) {
+        document.getElementById('authPanel').innerHTML = `<span>👤 <b>${user.username}</b></span> <button onclick="localStorage.removeItem('user'); location.reload();" style="background:#f43f5e; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;">Выйти</button>`;
+    }
+</script>
 </body>
 </html>
