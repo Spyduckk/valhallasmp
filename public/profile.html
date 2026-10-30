@@ -33,9 +33,21 @@
         </div>
         
         <h2 id="profileUsername" style="color: var(--accent); margin: 0 0 5px 0;">Загрузка...</h2>
+        <p id="profileRoleBadge" style="font-size: 12px; font-weight: bold; margin: 0 0 5px 0;"></p>
         <p id="profileBio" style="color: var(--text-secondary); font-size: 14px; margin: 0 0 15px 0;"></p>
         
-        <!-- Настройки профиля (если это твой профиль) -->
+        <!-- Панель управления для Админа (если ты смотришь чужой профиль и у тебя права админа) -->
+        <div id="adminPanel" style="display:none; margin-bottom: 15px; background:var(--card-bg); padding:10px; border-radius:6px; border:1px solid var(--border);">
+            <p style="font-size: 12px; margin: 0 0 6px 0; color:var(--accent);">⚙️ Панель Администратора:</p>
+            <select id="roleSelect" style="margin-bottom: 6px; font-size: 12px; padding: 4px;">
+                <option value="user">Игрок</option>
+                <option value="moderator">Модератор</option>
+                <option value="admin">Администратор</option>
+            </select>
+            <button onclick="changeUserRole()" class="btn" style="width: auto; padding: 4px 10px; font-size: 12px;">Изменить роль</button>
+        </div>
+
+        <!-- Настройки твоего профиля -->
         <div id="editBioSection" style="display:none; margin-top: 15px; border-top: 1px solid var(--border); padding-top: 15px;">
             <input type="text" id="newBioInput" placeholder="Новый статус..." style="margin-bottom: 8px;">
             <label style="font-size: 13px; color: var(--text-secondary); display: block; text-align: left; margin-bottom: 4px;">Сменить аватарку:</label>
@@ -79,6 +91,18 @@
         document.getElementById('profileBio').innerText = data.bio;
         document.getElementById('profilePostsCount').innerText = data.postsCount;
 
+        const roleBadge = document.getElementById('profileRoleBadge');
+        if (data.role === 'admin') {
+            roleBadge.innerText = '🛡️ АДМИНИСТРАТОР';
+            roleBadge.style.color = '#f85149';
+        } else if (data.role === 'moderator') {
+            roleBadge.innerText = '⚔️ МОДЕРАТОР';
+            roleBadge.style.color = '#34d399';
+        } else {
+            roleBadge.innerText = '👤 Игрок';
+            roleBadge.style.color = 'var(--text-secondary)';
+        }
+
         if (data.avatarUrl) {
             document.getElementById('defaultAvatar').style.display = 'none';
             const img = document.getElementById('userAvatarImg');
@@ -87,9 +111,15 @@
         }
 
         const currentUser = JSON.parse(localStorage.getItem('user'));
-        if (currentUser && currentUser.username.toLowerCase() === data.username.toLowerCase()) {
-            document.getElementById('editBioSection').style.display = 'block';
-            document.getElementById('newBioInput').value = data.bio;
+        if (currentUser) {
+            if (currentUser.username.toLowerCase() === data.username.toLowerCase()) {
+                document.getElementById('editBioSection').style.display = 'block';
+                document.getElementById('newBioInput').value = data.bio;
+            } else if (currentUser.role === 'admin') {
+                // Если ты админ, можешь управлять ролями других
+                document.getElementById('adminPanel').style.display = 'block';
+                document.getElementById('roleSelect').value = data.role;
+            }
         }
 
         const feed = document.getElementById('userPostsFeed');
@@ -109,6 +139,23 @@
         });
     }
 
+    async function changeUserRole() {
+        const currentUser = JSON.parse(localStorage.getItem('user'));
+        const newRole = document.getElementById('roleSelect').value;
+        const res = await fetch('/api/admin/set-role', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ adminUsername: currentUser.username, targetUsername: targetUser, newRole })
+        });
+        const data = await res.json();
+        if (data.success) {
+            alert("Роль успешно изменена!");
+            location.reload();
+        } else {
+            alert(data.error);
+        }
+    }
+
     async function updateProfile() {
         const currentUser = JSON.parse(localStorage.getItem('user'));
         const newBio = document.getElementById('newBioInput').value;
@@ -119,10 +166,7 @@
         formData.append('bio', newBio);
         if (avatarFile) formData.append('avatar', avatarFile);
 
-        const res = await fetch('/api/user/update', {
-            method: 'POST',
-            body: formData
-        });
+        const res = await fetch('/api/user/update', { method: 'POST', body: formData });
         const data = await res.json();
         if (data.success) {
             alert("Профиль успешно обновлен!");
