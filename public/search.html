@@ -8,10 +8,9 @@
 </head>
 <body>
 
-<!-- GitHub Header -->
 <header class="gh-header">
     <div class="gh-nav-left">
-        <a href="index.html" class="gh-logo">🐙 ValhallaSMP <span class="gh-subpath">/ поиск</span></a>
+        <a href="index.html" class="gh-logo">☃️ ValhallaSMP <span class="gh-subpath">/ поиск</span></a>
     </div>
     <div class="gh-nav-right">
         <input type="text" id="searchInput" placeholder="Type / to search" style="margin:0; padding:5px 10px; width:180px; font-size:13px;" onkeydown="if(event.key === 'Enter') searchSite()">
@@ -21,7 +20,6 @@
     </div>
 </header>
 
-<!-- GitHub Sub-navigation -->
 <nav class="gh-subnav">
     <a href="index.html" class="gh-tab">🏠 Главная</a>
     <a href="gallery.html" class="gh-tab">📸 Галерея</a>
@@ -37,7 +35,6 @@
     <div id="searchResults">Поиск...</div>
 </div>
 
-<!-- Модалка авторизации -->
 <div id="authModal" class="modal">
     <div class="modal-content" onkeydown="if(event.key === 'Enter') submitAuth()">
         <span class="close-modal" onclick="closeAuthModal()">&times;</span>
@@ -79,7 +76,6 @@
             return;
         }
 
-        // Выводим найденных пользователей
         if (data.users.length > 0) {
             resultsContainer.innerHTML += `<h3 style="color:var(--accent); font-size:16px; margin-bottom:10px;">👥 Пользователи (${data.users.length})</h3>`;
             data.users.forEach(u => {
@@ -93,7 +89,6 @@
             });
         }
 
-        // Выводим найденные посты/новости/скрины
         if (data.posts.length > 0) {
             resultsContainer.innerHTML += `<h3 style="color:var(--accent); font-size:16px; margin:20px 0 10px 0;">📸 Посты и новости (${data.posts.length})</h3>`;
             data.posts.forEach(post => {
