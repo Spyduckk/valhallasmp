@@ -31,7 +31,6 @@
         <h2 id="profileUsername" style="color: var(--accent); margin: 0 0 5px 0;">Загрузка...</h2>
         <p id="profileBio" style="color: var(--text-secondary); font-size: 14px; margin: 0 0 15px 0;"></p>
         
-        <!-- Редактирование статуса (если это твой профиль) -->
         <div id="editBioSection" style="display:none; margin-top: 10px;">
             <input type="text" id="newBioInput" placeholder="Новый статус..." style="margin-bottom: 5px;">
             <button onclick="updateBio()" class="btn" style="width: auto; padding: 6px 14px; font-size: 13px;">Изменить статус</button>
@@ -44,17 +43,6 @@
 
     <h2>📸 Скриншоты игрока</h2>
     <div id="userPostsFeed">Загрузка постов...</div>
-</div>
-
-<!-- Модалка авторизации -->
-<div id="authModal" class="modal">
-    <div class="modal-content">
-        <span class="close-modal" onclick="closeAuthModal()">&times;</span>
-        <h2 id="modalTitle" style="color: var(--accent); margin-top:0;">Вход</h2>
-        <input type="text" id="authLoginInput" placeholder="Юзернейм или Email">
-        <input type="password" id="authPassword" placeholder="Пароль">
-        <button class="btn" onclick="submitAuth()">Войти</button>
-    </div>
 </div>
 
 <script>
@@ -75,7 +63,7 @@
         const res = await fetch(`/api/user/${encodeURIComponent(targetUser)}`);
         if (!res.ok) {
             document.getElementById('profileUsername').innerText = "Игрок не найден";
-            document.getElementById('userPostsFeed').innerHTML = "";
+            document.getElementById('userPostsFeed').innerHTML = "<p style='color:var(--text-secondary); text-align:center;'>Такой пользователь не зарегистрирован на сервере.</p>";
             return;
         }
 
@@ -84,7 +72,6 @@
         document.getElementById('profileBio').innerText = data.bio;
         document.getElementById('profilePostsCount').innerText = data.postsCount;
 
-        // Если профиль принадлежит текущему юзеру — показываем форму редактирования статуса
         const currentUser = JSON.parse(localStorage.getItem('user'));
         if (currentUser && currentUser.username.toLowerCase() === data.username.toLowerCase()) {
             document.getElementById('editBioSection').style.display = 'block';
@@ -125,7 +112,10 @@
 
     const currentUser = JSON.parse(localStorage.getItem('user'));
     if (currentUser) {
-        document.getElementById('authPanel').innerHTML = `👤 <a href="profile.html?user=${encodeURIComponent(currentUser.username)}" style="color:var(--accent); text-decoration:none;"><b>${currentUser.username}</b></a> <button onclick="localStorage.removeItem('user'); location.reload();" style="background:#f85149; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; margin-left:8px;">Выйти</button>`;
+        const authPanel = document.getElementById('authPanel');
+        if(authPanel) {
+            authPanel.innerHTML = `👤 <a href="profile.html?user=${encodeURIComponent(currentUser.username)}" style="color:var(--accent); text-decoration:none;"><b>${currentUser.username}</b></a> <button onclick="localStorage.removeItem('user'); location.reload();" style="background:#f85149; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; margin-left:8px;">Выйти</button>`;
+        }
     }
 
     loadProfile();
