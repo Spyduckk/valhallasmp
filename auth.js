@@ -1,5 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCPW3c853cIYr3DYljetGwc5dNfL74L_JA",
@@ -12,46 +13,97 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
+const db = getFirestore(app);
 
-// Функции авторизации
-window.register = async function() {
-    const email = document.getElementById('authEmail').value;
-    const pass = document.getElementById('authPassword').value;
-    try {
-        await createUserWithEmailAndPassword(auth, email, pass);
-        alert("Регистрация успешна!");
-    } catch(e) { alert("Ошибка: " + e.message); }
+let isLoginMode = true;
+
+window.openAuthModal = function(login = true) {
+    isLoginMode = login;
+    document.getElementById('authModal').style.display = 'flex';
+    updateModalUI();
 }
 
-window.login = async function() {
+window.closeAuthModal = function() {
+    document.getElementById('authModal').style.display = 'none';
+}
+
+window.toggleAuthMode = function() {
+    isLoginMode = !isLoginMode;
+    updateModalUI();
+}
+
+function updateModalUI() {
+    const title = document.getElementById('modalTitle');
+    const btn = document.getElementById('modalActionBtn');
+    const switchText = document.getElementById('modalSwitchText');
+    const usernameField = document.getElementById('usernameField');
+
+    if (isLoginMode) {
+        title.innerText = "Вход в аккаунт";
+        btn.innerText = "Войти";
+        usernameField.style.display = "none";
+        switchText.innerHTML = 'Нет аккаунта? <span onclick="toggleAuthMode()">Зарегистрироваться</span>';
+    } else {
+        title.innerText = "Регистрация";
+        btn.innerText = "Зарегистрироваться";
+        usernameField.style.display = "block";
+        switchText.innerHTML = 'Уже есть аккаунт? <span onclick="toggleAuthMode()">Войти</span>';
+    }
+}
+
+window.submitAuth = async function() {
     const email = document.getElementById('authEmail').value;
     const pass = document.getElementById('authPassword').value;
+    const username = document.getElementById('authUsername').value;
+
     try {
-        await signInWithEmailAndPassword(auth, email, pass);
-        alert("Успешный вход!");
-    } catch(e) { alert("Ошибка: " + e.message); }
+        if (isLoginMode) {
+            await signInWithEmailAndPassword(auth, email, pass);
+            alert("Успешный вход!");
+        } else {
+            // Проверка длины юзернейма
+            if (username.length < 5) {
+                alert("Ошибка: Юзернейм должен быть не менее 5 символов!");
+                return;
+            }
+            
+            const creds = await createUserWithEmailAndPassword(auth, email, pass);
+            
+            // Сохраняем юзернейм в базу Firestore
+            await setDoc(doc(db, "users", creds.user.uid), {
+                username: username,
+                email: email
+            });
+
+            alert("Регистрация успешна!");
+        }
+        closeAuthModal();
+    } catch(e) {
+        alert("Ошибка: " + e.message);
+    }
 }
 
 window.logout = async function() {
     await signOut(auth);
 }
 
-// Следим за статусом пользователя на любой странице
-onAuthStateChanged(auth, (user) => {
+// Отслеживание статуса юзера
+onAuthStateChanged(auth, async (user) => {
     const authPanel = document.getElementById('authPanel');
     const uploadSection = document.getElementById('uploadSection');
     const loginPrompt = document.getElementById('loginPrompt');
-    const authForms = document.getElementById('authForms');
 
     if (user) {
-        if(authPanel) authPanel.innerHTML = `<span>👤 ${user.email}</span> <button onclick="logout()">Выйти</button>`;
+        // Достаем ник из базы
+        const userDoc = await getDoc(doc(db, "users", user.uid));
+        const username = userDoc.exists() ? userDoc.data().username : user.email;
+
+        if(authPanel) authPanel.innerHTML = `<span>👤 <b>${username}</b></span> <button onclick="logout()">Выйти</button>`;
         if(uploadSection) uploadSection.style.display = 'block';
         if(loginPrompt) loginPrompt.style.display = 'none';
-        if(authForms) authForms.style.display = 'none';
     } else {
-        if(authPanel) authPanel.innerHTML = `<span>Не вошел</span>`;
+        if(authPanel) authPanel.innerHTML = `<button class="login-btn" onclick="openAuthModal(true)">Войти / Регистрация</button>`;
         if(uploadSection) uploadSection.style.display = 'none';
         if(loginPrompt) loginPrompt.style.display = 'block';
-        if(authForms) authForms.style.display = 'block';
     }
 });
