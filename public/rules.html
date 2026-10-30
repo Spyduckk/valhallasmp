@@ -16,7 +16,7 @@
         </div>
 
         <div style="display: flex; gap: 6px; align-items: center;">
-            <input type="text" id="searchInput" placeholder="Найти игрока..." style="margin:0; padding:5px 10px; width:130px; font-size:13px;">
+            <input type="text" id="searchInput" placeholder="Найти игрока..." style="margin:0; padding:5px 10px; width:130px; font-size:13px;" onkeydown="if(event.key === 'Enter') searchUser()">
             <button onclick="searchUser()" class="btn" style="width:auto; padding:5px 10px; font-size:13px;">🔍</button>
         </div>
 
@@ -38,30 +38,25 @@
             <li><b>1.3</b> Незнание правил не освобождает от ответственности.</li>
         </ul>
     </div>
-    
     <div class="rules">
-        <h2>2. Общение и игровой процесс</h2>
+        <h2>2. Общение и Игровой процесс</h2>
         <ul>
-            <li><b>2.1</b> Запрещен спам, флуд и оскорбления.</li>
-            <li><b>2.2</b> Гриферство и порча чужих построек строго запрещены.</li>
-            <li><b>2.3</b> Запрещено мешать работе сервера (лаг-машины и т. д.).</li>
+            <li><b>2.1</b> Запрещен спам, оскорбления и гриферство.</li>
+            <li><b>2.2</b> Запрещены лаг-машины.</li>
         </ul>
     </div>
 </div>
 
-<!-- Модалка авторизации -->
+<!-- Модалка авторизации (отправка по Enter) -->
 <div id="authModal" class="modal">
-    <div class="modal-content">
+    <div class="modal-content" onkeydown="if(event.key === 'Enter') submitAuth()">
         <span class="close-modal" onclick="closeAuthModal()">&times;</span>
         <h2 id="modalTitle" style="color: var(--accent); margin-top:0;">Вход</h2>
-        
         <input type="text" id="authLoginInput" placeholder="Юзернейм или Email">
         <div id="usernameField" style="display: none;"><input type="text" id="authUsername" placeholder="Юзернейм (мин. 5 символов)"></div>
         <div id="emailField"><input type="email" id="authEmail" placeholder="Email"></div>
         <input type="password" id="authPassword" placeholder="Пароль">
-        
         <button class="btn" id="modalActionBtn" onclick="submitAuth()">Войти</button>
-        
         <div id="modalSwitchText" style="margin-top:15px; text-align:center; font-size:14px; color:var(--text-secondary); cursor:pointer;">
             Нет аккаунта? <span onclick="toggleAuthMode()" style="color:var(--accent);">Зарегистрироваться</span>
         </div>
