@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ValhallaSMP 26.2 - Правила</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="container">
+    <div class="nav">
+        <div class="nav-tabs">
+            <a href="index.html" class="tab-btn">Главная</a>
+            <a href="gallery.html" class="tab-btn">Галерея</a>
+            <a href="rules.html" class="tab-btn active">Правила</a>
+        </div>
+        <div class="auth-panel" id="authPanel">
+            <button class="login-btn" onclick="openAuthModal(true)">Войти / Регистрация</button>
+        </div>
+    </div>
+
+    <header>
+        <h1>📜 Правила сервера Valhalla</h1>
+        <p class="subtitle">Обязательны к прочтению для всех игроков</p>
+    </header>
+
+    <div class="rules" style="margin-bottom: 20px;">
+        <h2 style="color: #60a5fa; margin-top:0;">1. Общие положения</h2>
+        <ul>
+            <li><b>1.1</b> Администрация имеет право действовать на своё усмотрение.</li>
+            <li><b>1.2</b> Все игроки обязаны соблюдать данные правила.</li>
+            <li><b>1.3</b> Незнание правил не освобождает от ответственности.</li>
+            <li><b>1.4</b> Соблюдайте меру и приличия.</li>
+        </ul>
+    </div>
+
+    <div class="rules" style="margin-bottom: 20px;">
+        <h2 style="color: #f43f5e; margin-top:0;">2. Правила общения</h2>
+        <ul>
+            <li><b>2.1</b> Запрещен спам, флуд.</li>
+            <li><b>2.2</b> Запрещена реклама без ведома администрации.</li>
+            <li><b>2.3</b> Запрещены оскорбления по разным признакам.</li>
+        </ul>
+    </div>
+
+    <div class="rules">
+        <h2 style="color: #34d399; margin-top:0;">3. Игровой процесс</h2>
+        <ul>
+            <li><b>3.1</b> Гриферство запрещено.</li>
+            <li><b>3.2</b> Запрещено мешать работе сервера (строить лаг-машины и т. д.).</li>
+        </ul>
+    </div>
+</div>
+
+<!-- Модалка авторизации -->
+<div id="authModal" class="modal">
+    <div class="modal-content">
+        <span class="close-modal" onclick="closeAuthModal()">&times;</span>
+        <h2 id="modalTitle" style="color: var(--accent); margin-top:0;">Вход</h2>
+        <div id="usernameField" style="display: none;"><input type="text" id="authUsername" placeholder="Юзернейм (мин. 5 символов)"></div>
+        <input type="email" id="authEmail" placeholder="Email">
+        <input type="password" id="authPassword" placeholder="Пароль">
+        <button class="btn" id="modalActionBtn" onclick="submitAuth()">Войти</button>
+        <div id="modalSwitchText" style="margin-top:15px; text-align:center; font-size:14px; color:var(--text-secondary); cursor:pointer;">
+            Нет аккаунта? <span onclick="toggleAuthMode()" style="color:var(--accent);">Зарегистрироваться</span>
+        </div>
+    </div>
+</div>
+
+<script>
+    let isLoginMode = true;
+    function openAuthModal(login) { isLoginMode = login; document.getElementById('authModal').style.display = 'flex'; updateUI(); }
+    function closeAuthModal() { document.getElementById('authModal').style.display = 'none'; }
+    function toggleAuthMode() { isLoginMode = !isLoginMode; updateUI(); }
+    function updateUI() {
+        document.getElementById('modalTitle').innerText = isLoginMode ? "Вход" : "Регистрация";
+        document.getElementById('modalActionBtn').innerText = isLoginMode ? "Войти" : "Зарегистрироваться";
+        document.getElementById('usernameField').style.display = isLoginMode ? "none" : "block";
+        document.getElementById('modalSwitchText').innerHTML = isLoginMode ? 'Нет аккаунта? <span onclick="toggleAuthMode()" style="color:var(--accent);">Зарегистрироваться</span>' : 'Уже есть аккаунт? <span onclick="toggleAuthMode()" style="color:var(--accent);">Войти</span>';
+    }
+
+    async function submitAuth() {
+        const email = document.getElementById('authEmail').value;
+        const password = document.getElementById('authPassword').value;
+        const username = document.getElementById('authUsername').value;
+
+        const url = isLoginMode ? '/api/login' : '/api/register';
+        const body = isLoginMode ? { email, password } : { username, email, password };
+
+        if (!isLoginMode && username.length < 5) return alert("Юзернейм должен быть не менее 5 символов!");
+
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (data.success) {
+            localStorage.setItem('user', JSON.stringify(data));
+            alert("Успешно!");
+            location.reload();
+        } else {
+            alert(data.error);
+        }
+    }
+
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (user) {
+        document.getElementById('authPanel').innerHTML = `👤 <b>${user.username}</b> <button onclick="localStorage.removeItem('user'); location.reload();" style="background:#f43f5e; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;">Выйти</button>`;
+    }
+</script>
+</body>
+</html>
