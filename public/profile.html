@@ -16,7 +16,7 @@
         </div>
 
         <div style="display: flex; gap: 6px; align-items: center;">
-            <input type="text" id="searchInput" placeholder="Найти игрока..." style="margin:0; padding:5px 10px; width:130px; font-size:13px;">
+            <input type="text" id="searchInput" placeholder="Найти игрока..." style="margin:0; padding:5px 10px; width:130px; font-size:13px;" onkeydown="if(event.key === 'Enter') searchUser()">
             <button onclick="searchUser()" class="btn" style="width:auto; padding:5px 10px; font-size:13px;">🔍</button>
         </div>
 
@@ -36,7 +36,6 @@
         <p id="profileRoleBadge" style="font-size: 12px; font-weight: bold; margin: 0 0 5px 0;"></p>
         <p id="profileBio" style="color: var(--text-secondary); font-size: 14px; margin: 0 0 15px 0;"></p>
         
-        <!-- Панель управления для Админа (если ты смотришь чужой профиль и у тебя права админа) -->
         <div id="adminPanel" style="display:none; margin-bottom: 15px; background:var(--card-bg); padding:10px; border-radius:6px; border:1px solid var(--border);">
             <p style="font-size: 12px; margin: 0 0 6px 0; color:var(--accent);">⚙️ Панель Администратора:</p>
             <select id="roleSelect" style="margin-bottom: 6px; font-size: 12px; padding: 4px;">
@@ -47,7 +46,6 @@
             <button onclick="changeUserRole()" class="btn" style="width: auto; padding: 4px 10px; font-size: 12px;">Изменить роль</button>
         </div>
 
-        <!-- Настройки твоего профиля -->
         <div id="editBioSection" style="display:none; margin-top: 15px; border-top: 1px solid var(--border); padding-top: 15px;">
             <input type="text" id="newBioInput" placeholder="Новый статус..." style="margin-bottom: 8px;">
             <label style="font-size: 13px; color: var(--text-secondary); display: block; text-align: left; margin-bottom: 4px;">Сменить аватарку:</label>
@@ -62,6 +60,17 @@
 
     <h2>📸 Скриншоты игрока</h2>
     <div id="userPostsFeed">Загрузка постов...</div>
+</div>
+
+<!-- Модалка авторизации (отправка по Enter) -->
+<div id="authModal" class="modal">
+    <div class="modal-content" onkeydown="if(event.key === 'Enter') submitAuth()">
+        <span class="close-modal" onclick="closeAuthModal()">&times;</span>
+        <h2 id="modalTitle" style="color: var(--accent); margin-top:0;">Вход</h2>
+        <input type="text" id="authLoginInput" placeholder="Юзернейм или Email">
+        <input type="password" id="authPassword" placeholder="Пароль">
+        <button class="btn" onclick="submitAuth()">Войти</button>
+    </div>
 </div>
 
 <script>
@@ -116,7 +125,6 @@
                 document.getElementById('editBioSection').style.display = 'block';
                 document.getElementById('newBioInput').value = data.bio;
             } else if (currentUser.role === 'admin') {
-                // Если ты админ, можешь управлять ролями других
                 document.getElementById('adminPanel').style.display = 'block';
                 document.getElementById('roleSelect').value = data.role;
             }
@@ -137,6 +145,24 @@
                 </div>
             `;
         });
+    }
+
+    async function submitAuth() {
+        const login = document.getElementById('authLoginInput').value;
+        const password = document.getElementById('authPassword').value;
+        const res = await fetch('/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ login, password })
+        });
+        const data = await res.json();
+        if (data.success) {
+            localStorage.setItem('user', JSON.stringify(data));
+            alert("Успешно!");
+            location.reload();
+        } else {
+            alert(data.error);
+        }
     }
 
     async function changeUserRole() {
