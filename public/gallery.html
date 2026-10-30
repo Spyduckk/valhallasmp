@@ -16,7 +16,7 @@
         </div>
 
         <div style="display: flex; gap: 6px; align-items: center;">
-            <input type="text" id="searchInput" placeholder="Найти игрока..." style="margin:0; padding:5px 10px; width:130px; font-size:13px;">
+            <input type="text" id="searchInput" placeholder="Найти игрока..." style="margin:0; padding:5px 10px; width:130px; font-size:13px;" onkeydown="if(event.key === 'Enter') searchUser()">
             <button onclick="searchUser()" class="btn" style="width:auto; padding:5px 10px; font-size:13px;">🔍</button>
         </div>
 
@@ -66,9 +66,9 @@
     <div id="postsFeed" style="margin-top: 20px;">Загрузка постов...</div>
 </div>
 
-<!-- Модалка авторизации -->
+<!-- Модалка авторизации (отправка по Enter) -->
 <div id="authModal" class="modal">
-    <div class="modal-content">
+    <div class="modal-content" onkeydown="if(event.key === 'Enter') submitAuth()">
         <span class="close-modal" onclick="closeAuthModal()">&times;</span>
         <h2 id="modalTitle" style="color: var(--accent); margin-top:0;">Вход</h2>
         <input type="text" id="authLoginInput" placeholder="Юзернейм или Email">
@@ -133,7 +133,6 @@
         const res = await fetch(`/api/user/${encodeURIComponent(user.username)}`);
         const userData = res.ok ? await res.json() : { notifications: [], role: 'user' };
         
-        // Обновляем роль в локалсторадже
         user.role = userData.role;
         localStorage.setItem('user', JSON.stringify(user));
 
@@ -341,7 +340,6 @@
             const isLiked = user && post.likes && post.likes.includes(user.username);
             const likeColor = isLiked ? '#f85149' : 'var(--text-secondary)';
 
-            // Модератор или админ могут удалить любое фото
             const canDeletePost = user && (user.username === post.author || user.role === 'admin' || user.role === 'moderator');
             let deletePostBtn = canDeletePost ? `<button onclick="deletePost(${post.id})" style="background:none; border:none; color:var(--danger); cursor:pointer; font-size:13px; font-weight:600; float:right;">🗑️ Удалить фото</button>` : '';
 
@@ -371,7 +369,7 @@
                             <a href="profile.html?user=${encodeURIComponent(c.author)}" style="color:var(--accent); text-decoration:none;"><b>${c.author}</b></a>: ${c.text}
                             <div class="comment-actions">${replyBtn} ${deleteBtn}</div>
                             <div id="replyBox_${post.id}_${c.id}" style="display:none; margin-top:6px;">
-                                <input type="text" id="replyInput_${post.id}_${c.id}" placeholder="Ваш ответ..." style="margin:0; padding:4px 8px; font-size:12px; width:80%;">
+                                <input type="text" id="replyInput_${post.id}_${c.id}" placeholder="Ваш ответ..." style="margin:0; padding:4px 8px; font-size:12px; width:80%;" onkeydown="if(event.key === 'Enter') sendReply(${post.id}, ${c.id})">
                                 <button onclick="sendReply(${post.id}, ${c.id})" class="btn" style="width:auto; padding:4px 8px; font-size:12px;">Ок</button>
                             </div>
                             ${repliesHtml}
@@ -398,7 +396,7 @@
                     <div style="margin-top: 12px; border-top: 1px solid var(--border); padding-top: 10px;">
                         <div style="max-height: 180px; overflow-y: auto; margin-bottom: 8px;">${commentsHtml || '<span style="color:var(--text-secondary); font-size:12px;">Нет комментариев</span>'}</div>
                         <div style="display: flex; gap: 8px;">
-                            <input type="text" id="commentInput_${post.id}" placeholder="Написать комментарий..." style="margin:0; padding:6px 10px; font-size:13px;">
+                            <input type="text" id="commentInput_${post.id}" placeholder="Написать комментарий..." style="margin:0; padding:6px 10px; font-size:13px;" onkeydown="if(event.key === 'Enter') addComment(${post.id})">
                             <button onclick="addComment(${post.id})" class="btn" style="width: auto; padding: 6px 12px; font-size: 13px;">Отправить</button>
                         </div>
                     </div>
