@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Результаты поиска - ValhallaSMP</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- GitHub Header -->
+<header class="gh-header">
+    <div class="gh-nav-left">
+        <a href="index.html" class="gh-logo">🐙 ValhallaSMP <span class="gh-subpath">/ поиск</span></a>
+    </div>
+    <div class="gh-nav-right">
+        <input type="text" id="searchInput" placeholder="Type / to search" style="margin:0; padding:5px 10px; width:180px; font-size:13px;" onkeydown="if(event.key === 'Enter') searchSite()">
+        <div class="auth-panel" id="authPanel">
+            <button class="login-btn" onclick="openAuthModal(true)">Sign in</button>
+        </div>
+    </div>
+</header>
+
+<!-- GitHub Sub-navigation -->
+<nav class="gh-subnav">
+    <a href="index.html" class="gh-tab">🏠 Главная</a>
+    <a href="gallery.html" class="gh-tab">📸 Галерея</a>
+    <a href="rules.html" class="gh-tab">📜 Правила</a>
+</nav>
+
+<div class="container">
+    <header style="text-align: left; margin-bottom: 25px;">
+        <h1 id="searchTitle">🔍 Результаты поиска</h1>
+        <p class="subtitle" id="searchSubtitle">Загрузка...</p>
+    </header>
+
+    <div id="searchResults">Поиск...</div>
+</div>
+
+<!-- Модалка авторизации -->
+<div id="authModal" class="modal">
+    <div class="modal-content" onkeydown="if(event.key === 'Enter') submitAuth()">
+        <span class="close-modal" onclick="closeAuthModal()">&times;</span>
+        <h2 id="modalTitle" style="color: var(--accent); margin-top:0;">Вход</h2>
+        <input type="text" id="authLoginInput" placeholder="Юзернейм или Email">
+        <input type="password" id="authPassword" placeholder="Пароль">
+        <button class="btn" onclick="submitAuth()">Войти</button>
+    </div>
+</div>
+
+<script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const query = urlParams.get('q') || '';
+
+    function searchSite() {
+        const val = document.getElementById('searchInput').value.trim();
+        if (val) window.location.href = `search.html?q=${encodeURIComponent(val)}`;
+    }
+
+    async function performSearch() {
+        if (!query) {
+            document.getElementById('searchSubtitle').innerText = "Пустой поисковый запрос";
+            document.getElementById('searchResults').innerHTML = "";
+            return;
+        }
+
+        document.getElementById('searchInput').value = query;
+        document.getElementById('searchSubtitle').innerText = `По запросу: "${query}"`;
+
+        const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+        const data = await res.json();
+
+        const resultsContainer = document.getElementById('searchResults');
+        resultsContainer.innerHTML = "";
+
+        const totalResults = data.posts.length + data.users.length;
+        if (totalResults === 0) {
+            resultsContainer.innerHTML = "<p style='color:var(--text-secondary); text-align:center;'>Ничего не найдено по вашему запросу.</p>";
+            return;
+        }
+
+        // Выводим найденных пользователей
+        if (data.users.length > 0) {
+            resultsContainer.innerHTML += `<h3 style="color:var(--accent); font-size:16px; margin-bottom:10px;">👥 Пользователи (${data.users.length})</h3>`;
+            data.users.forEach(u => {
+                let av = u.avatarUrl ? `<img src="${u.avatarUrl}" style="width:30px; height:30px; border-radius:50%; object-fit:cover; vertical-align:middle; margin-right:8px;">` : '👤 ';
+                resultsContainer.innerHTML += `
+                    <div style="background:var(--box-bg); padding:10px; border-radius:6px; margin-bottom:8px; border:1px solid var(--border);">
+                        <a href="profile.html?user=${encodeURIComponent(u.username)}" style="color:var(--accent); text-decoration:none; font-weight:bold;">${av} ${u.username}</a>
+                        <p style="margin:4px 0 0 0; font-size:13px; color:var(--text-secondary);">${u.bio}</p>
+                    </div>
+                `;
+            });
+        }
+
+        // Выводим найденные посты/новости/скрины
+        if (data.posts.length > 0) {
+            resultsContainer.innerHTML += `<h3 style="color:var(--accent); font-size:16px; margin:20px 0 10px 0;">📸 Посты и новости (${data.posts.length})</h3>`;
+            data.posts.forEach(post => {
+                resultsContainer.innerHTML += `
+                    <div style="background:var(--box-bg); border-radius:8px; padding:15px; margin-bottom:15px; border:1px solid var(--border);">
+                        <p style="margin:0 0 5px 0; font-size:13px;"><b>Автор:</b> <a href="profile.html?user=${encodeURIComponent(post.author)}" style="color:var(--accent); text-decoration:none;">${post.author}</a> <span style="background:var(--card-bg); padding:2px 6px; border-radius:4px; font-size:11px; color:var(--text-secondary); margin-left:8px;">📁 ${post.category || 'Разное'}</span></p>
+                        <p style="margin:0 0 10px 0;">${post.caption || ''}</p>
+                        <img src="${post.imageUrl}" style="width:100%; border-radius:6px; max-height:350px; object-fit:cover;">
+                    </div>
+                `;
+            });
+        }
+    }
+
+    async function checkAuthUserPanel() {
+        const user = JSON.parse(localStorage.getItem('user'));
+        if (!user) return;
+        const res = await fetch(`/api/user/${encodeURIComponent(user.username)}`);
+        const userData = res.ok ? await res.json() : { notifications: [], role: 'user', avatarUrl: '' };
+        
+        let avatarHtml = userData.avatarUrl 
+            ? `<img src="${userData.avatarUrl}" style="width:30px; height:30px; border-radius:50%; object-fit:cover; border:1px solid var(--accent); vertical-align:middle;">`
+            : `<span style="font-size:20px; vertical-align:middle;">👤</span>`;
+
+        const authPanel = document.getElementById('authPanel');
+        if(authPanel) {
+            authPanel.innerHTML = `
+                <a href="profile.html?user=${encodeURIComponent(user.username)}" style="text-decoration:none;" title="Профиль">${avatarHtml}</a>
+                <button onclick="localStorage.removeItem('user'); location.reload();" style="background:#f85149; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; margin-left:8px; font-size:12px;">Выйти</button>
+            `;
+        }
+    }
+
+    async function submitAuth() {
+        const login = document.getElementById('authLoginInput').value;
+        const password = document.getElementById('authPassword').value;
+        const res = await fetch('/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ login, password })
+        });
+        const data = await res.json();
+        if (data.success) {
+            localStorage.setItem('user', JSON.stringify(data));
+            alert("Успешно!");
+            location.reload();
+        } else {
+            alert(data.error);
+        }
+    }
+
+    checkAuthUserPanel();
+    performSearch();
+</script>
+</body>
+</html>
