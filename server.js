@@ -84,6 +84,29 @@ app.post('/api/login', (req, res) => {
     res.json({ success: true, username: user.username, email: user.email, role: user.role || 'user', avatarUrl: user.avatarUrl || '' });
 });
 
+// Поиск по сайту (посты, подписи, категории, авторы)
+app.get('/api/search', (req, res) => {
+    const query = (req.query.q || '').toLowerCase().trim();
+    if (!query) return res.json({ posts: [], users: [] });
+
+    const db = readDB();
+    
+    // Ищем посты, где подпись, категория или автор содержат запрос
+    const matchedPosts = db.posts.filter(p => 
+        (p.caption && p.caption.toLowerCase().includes(query)) ||
+        (p.category && p.category.toLowerCase().includes(query)) ||
+        (p.author && p.author.toLowerCase().includes(query))
+    );
+
+    // Ищем пользователей по нику
+    const matchedUsers = db.users.filter(u => u.username.toLowerCase().includes(query));
+
+    res.json({
+        posts: matchedPosts.reverse(),
+        users: matchedUsers.map(u => ({ username: u.username, bio: u.bio, avatarUrl: u.avatarUrl }))
+    });
+});
+
 // Получить посты
 app.get('/api/posts', (req, res) => {
     const db = readDB();
@@ -236,7 +259,7 @@ app.delete('/api/posts/:postId/comment/:commentId', (req, res) => {
     res.json({ success: true });
 });
 
-// Админ-панель: изменение роли и статуса (био) игрока
+// Админ-панель
 app.post('/api/admin/update-user', (req, res) => {
     const { adminUsername, targetUsername, newRole, newBio } = req.body;
     const db = readDB();
@@ -256,7 +279,6 @@ app.post('/api/admin/update-user', (req, res) => {
     res.json({ success: true, role: target.role, bio: target.bio });
 });
 
-// Смена собственной аватарки
 app.post('/api/user/update-avatar', upload.single('avatar'), (req, res) => {
     const { username } = req.body;
     const db = readDB();
@@ -268,7 +290,6 @@ app.post('/api/user/update-avatar', upload.single('avatar'), (req, res) => {
     res.json({ success: true, avatarUrl: user.avatarUrl });
 });
 
-// Профиль игрока
 app.get('/api/user/:username', (req, res) => {
     const searchName = req.params.username.toLowerCase();
     const db = readDB();
