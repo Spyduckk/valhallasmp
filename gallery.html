@@ -25,27 +25,36 @@
         <textarea id="imageCaption" placeholder="Подпись к фото..." rows="2"></textarea>
         <button class="btn" onclick="uploadPost()">Опубликовать</button>
     </div>
-    <p id="loginPrompt" style="color: #9ca3af;">Войдите в аккаунт, чтобы загружать скриншоты.</p>
-
-    <!-- Формы логина/регистрации (появляются если не вошел) -->
-    <div id="authForms" class="form-group">
-        <h3>Авторизация / Регистрация</h3>
-        <input type="email" id="authEmail" placeholder="Email">
-        <input type="password" id="authPassword" placeholder="Пароль">
-        <div style="display: flex; gap: 10px;">
-            <button class="btn" onclick="login()">Войти</button>
-            <button class="btn" style="background:#60a5fa;" onclick="register()">Регистрация</button>
-        </div>
-    </div>
+    <p id="loginPrompt" style="color: var(--text-secondary);">Войдите в аккаунт, чтобы загружать скриншоты.</p>
 
     <div id="postsFeed" style="margin-top: 20px;">
-        <!-- Сюда подгружаются посты из базы -->
+        <!-- Посты из базы -->
+    </div>
+</div>
+
+<!-- МОДАЛЬНОЕ ОКНО АВТОРИЗАЦИИ -->
+<div id="authModal" class="modal">
+    <div class="modal-content">
+        <span class="close-modal" onclick="closeAuthModal()">&times;</span>
+        <h2 id="modalTitle" style="margin-top: 0; color: var(--accent);">Вход</h2>
+        
+        <div id="usernameField" style="display: none;">
+            <input type="text" id="authUsername" placeholder="Юзернейм (мин. 5 символов)">
+        </div>
+        <input type="email" id="authEmail" placeholder="Email">
+        <input type="password" id="authPassword" placeholder="Пароль">
+        
+        <button class="btn" id="modalActionBtn" onclick="submitAuth()">Войти</button>
+        
+        <div class="auth-switch" id="modalSwitchText">
+            Нет аккаунта? <span onclick="toggleAuthMode()">Зарегистрироваться</span>
+        </div>
     </div>
 </div>
 
 <script type="module">
     import { auth } from './auth.js';
-    import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
     import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 
     const db = getFirestore();
@@ -63,10 +72,14 @@
         await uploadBytes(storageRef, file);
         const url = await getDownloadURL(storageRef);
 
+        // Достаем ник автора из базы
+        const userDoc = await getDoc(doc(db, "users", auth.currentUser.uid));
+        const username = userDoc.exists() ? userDoc.data().username : auth.currentUser.email;
+
         await addDoc(collection(db, "posts"), {
             imageUrl: url,
             caption: caption,
-            author: auth.currentUser.email,
+            author: username,
             createdAt: Date.now()
         });
 
