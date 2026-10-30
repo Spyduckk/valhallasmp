@@ -39,7 +39,7 @@ body {
     padding-bottom: 15px;
 }
 
-.nav-tabs { display: flex; gap: 8px; }
+.nav-tabs { display: flex; gap: 8px; align-items: center; }
 
 .tab-btn {
     background: transparent;
@@ -135,43 +135,37 @@ input:focus, textarea:focus { outline: none; border-color: var(--accent); box-sh
 }
 .btn:hover { background: var(--accent-hover); }
 
-/* Прогресс-бар загрузки */
-.progress-container {
-    display: none;
-    margin-bottom: 15px;
-}
-.progress-bar-bg {
-    background: var(--card-bg);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    height: 16px;
-    overflow: hidden;
-    margin-bottom: 8px;
-}
-.progress-bar-fill {
-    background: var(--accent);
-    height: 100%;
-    width: 0%;
-    transition: width 0.1s linear;
-}
-.progress-actions {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+/* Комментарии и ответы */
+.comment-box {
     font-size: 13px;
-    color: var(--text-secondary);
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid rgba(48, 54, 61, 0.5);
 }
-.cancel-btn {
-    background: var(--danger);
-    color: white;
-    border: none;
-    padding: 4px 10px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-weight: 600;
+.reply-box {
+    margin-left: 20px;
+    margin-top: 6px;
+    padding-left: 10px;
+    border-left: 2px solid var(--accent);
+    font-size: 12px;
 }
+.comment-actions {
+    display: inline-flex;
+    gap: 10px;
+    margin-left: 10px;
+    font-size: 11px;
+}
+.comment-actions span { cursor: pointer; color: var(--text-secondary); }
+.comment-actions span:hover { color: var(--accent); }
+.comment-actions .delete-text:hover { color: var(--danger); }
 
-/* Всплывающее уведомление снизу */
+/* Прогресс-бар */
+.progress-container { display: none; margin-bottom: 15px; }
+.progress-bar-bg { background: var(--card-bg); border: 1px solid var(--border); border-radius: 6px; height: 16px; overflow: hidden; margin-bottom: 8px; }
+.progress-bar-fill { background: var(--accent); height: 100%; width: 0%; transition: width 0.1s linear; }
+.progress-actions { display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: var(--text-secondary); }
+.cancel-btn { background: var(--danger); color: white; border: none; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-weight: 600; }
+
 #toast {
     visibility: hidden;
     min-width: 250px;
@@ -190,10 +184,7 @@ input:focus, textarea:focus { outline: none; border-color: var(--accent); box-sh
     font-weight: 600;
     font-size: 14px;
 }
-#toast.show {
-    visibility: visible;
-    animation: fadein 0.3s, fadeout 0.3s 2.5s;
-}
+#toast.show { visibility: visible; animation: fadein 0.3s, fadeout 0.3s 2.5s; }
 @keyframes fadein { from { bottom: 0; opacity: 0; } to { bottom: 30px; opacity: 1; } }
 @keyframes fadeout { from { bottom: 30px; opacity: 1; } to { bottom: 0; opacity: 0; } }
 
@@ -217,11 +208,5 @@ input:focus, textarea:focus { outline: none; border-color: var(--accent); box-sh
     box-shadow: 0 16px 32px rgba(0,0,0,0.6);
     position: relative;
 }
-.close-modal {
-    position: absolute;
-    top: 15px; right: 20px;
-    font-size: 20px;
-    cursor: pointer;
-    color: var(--text-secondary);
-}
+.close-modal { position: absolute; top: 15px; right: 20px; font-size: 20px; cursor: pointer; color: var(--text-secondary); }
 .close-modal:hover { color: var(--text); }
